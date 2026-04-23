@@ -147,10 +147,10 @@ MMPage {
       // ── 3. Tabla de datos ───────────────────────────────────────────
       Rectangle {
         Layout.fillWidth: true
-        // Altura: encabezado + filas; mínimo 120dp para que siempre sea visible
+        // Altura: barra de título + encabezados + filas; mínimo 160dp
         implicitHeight: Math.max(
-          120 * __dp,
-          tableHeader.height + (root.rowCount * __style.row40) + __style.margin12 * 2
+          160 * __dp,
+          tableHeader.height + __style.row40 + (root.rowCount * __style.row40) + __style.margin12 * 2 + __style.spacing10 * 2
         )
         color: __style.polarColor
         radius: __style.radius12
@@ -200,6 +200,33 @@ MMPage {
             }
           }
 
+          // Encabezados de columna
+          HorizontalHeaderView {
+            id: headerView
+            syncView: dataTableView
+            Layout.fillWidth: true
+            clip: true
+
+            delegate: Rectangle {
+              implicitWidth: Math.max(80 * __dp, dataTableView.width / Math.max(1, dataTableView.columns))
+              implicitHeight: __style.row40
+              color: __style.forestColor
+              border.color: __style.darkGreenColor
+              border.width: __style.width1
+
+              MMText {
+                anchors.fill: parent
+                anchors.leftMargin: __style.margin8
+                anchors.rightMargin: __style.margin8
+                text: display ?? ""
+                font: __style.t5
+                color: __style.polarColor
+                verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideRight
+              }
+            }
+          }
+
           // TableView sin altura fija — se expande con los datos
           TableView {
             id: dataTableView
@@ -207,6 +234,9 @@ MMPage {
             implicitHeight: root.rowCount * __style.row40
             model: root.tableModel
             clip: true
+            columnWidthProvider: function(col) {
+              return Math.max(80 * __dp, width / Math.max(1, columns))
+            }
 
             delegate: Rectangle {
               implicitWidth: Math.max(80 * __dp, dataTableView.width / Math.max(1, dataTableView.columns))
