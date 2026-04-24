@@ -163,7 +163,7 @@ void DBManager::createTableModel()
     m_tableModel->setTable(m_currentTable);
 
     // Configurar estrategia de edición
-    m_tableModel->setEditStrategy(QSqlTableModel::OnFieldChange);
+    m_tableModel->setEditStrategy(QSqlTableModel::OnManualSubmit);
 
     // Seleccionar todos los datos
     if (!m_tableModel->select()) {
