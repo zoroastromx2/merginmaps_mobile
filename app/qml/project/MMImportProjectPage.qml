@@ -96,7 +96,7 @@ MMPage {
         Layout.topMargin: __style.margin12
 
         text: qsTr( "Select .qgz file" )
-        iconSource: __style.fileIcon   // adjust to an icon that exists in mmstyle.h
+        iconSourceLeft: __style.workspacesIcon
 
         onClicked: {
           busyOverlay.visible = true
