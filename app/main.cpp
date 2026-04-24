@@ -48,7 +48,7 @@
 #include "merginsubscriptionstatus.h"
 #include "merginprojectstatusmodel.h"
 #include "recordinglayersproxymodel.h"
-
+#include "filepickermanager.h"   // ← AÑADIR aquí (línea nueva después de la 38)
 #include "dbmanager.h"
 #include <QStandardPaths>
 #include <QtSql>
@@ -527,6 +527,9 @@ int main( int argc, char *argv[] )
     // Create Input classes
     GeodiffUtils::init();
     AndroidUtils androidUtils;
+
+    FilePickerManager filePickerManager;   // ← AÑADIR aquí (línea nueva después de la 529)
+
     IosUtils iosUtils;
     LocalProjectsManager localProjectsManager( projectDir );
     std::unique_ptr<MerginApi> ma =  std::unique_ptr<MerginApi>( new MerginApi( localProjectsManager ) );
@@ -761,6 +764,23 @@ int main( int argc, char *argv[] )
     engine.rootContext()->setContextProperty( "__projectWizard", &pw );
     engine.rootContext()->setContextProperty( "__localProjectsManager", &localProjectsManager );
     engine.rootContext()->setContextProperty( "__variablesManager", vm.get() );
+
+    // ── FilePickerManager ─────────────────────────────────────────────────
+    // ← AÑADIR el siguiente bloque completo aquí (antes del bloque DBManager)
+    engine.rootContext()->setContextProperty( "__filePickerManager", &filePickerManager );
+
+    QObject::connect( &filePickerManager, &FilePickerManager::notifyError,
+                     &lambdaContext, [&notificationModel]( const QString &message )
+                     {
+                         notificationModel.addError( message );
+                     } );
+
+    QObject::connect( &filePickerManager, &FilePickerManager::notifyInfo,
+                     &lambdaContext, [&notificationModel]( const QString &message )
+                     {
+                         notificationModel.addInfo( message );
+                     } );
+    // ── Fin FilePickerManager ─────────────────────────────────────────────
 
     // =====================================================================
     // INICIALIZAR DBMANAGER PARA MANEJO DE BASES DE DATOS

@@ -73,6 +73,61 @@ public class MMActivity extends QtActivity
     setCustomStatusAndNavBar();
   }
 
+/**
+ * Copies a .qgz file selected via SAF (content:// URI) to the app's
+ * private cache directory and returns its absolute path as a file:// URI
+ * string.  Returns an empty string on failure.
+ *
+ * Called from C++ via JNI in FilePickerManager::handleActivityResult().
+ *
+ * @param qgzUri     The content:// URI delivered by ACTION_OPEN_DOCUMENT.
+ * @param cacheDir   Absolute path to the target directory
+ *                   (QStandardPaths::CacheLocation on the C++ side).
+ */
+public String importQgzFile( Uri qgzUri, String cacheDir ) {
+
+  // Resolve the display name so we preserve the original filename
+  String fileName = getFileName( qgzUri );
+
+  // Guarantee the file ends with .qgz so QGIS recognises it
+  if ( fileName == null || fileName.isEmpty() ) {
+    fileName = "imported_project.qgz";
+  }
+  if ( !fileName.toLowerCase().endsWith( ".qgz" ) ) {
+    fileName = fileName + ".qgz";
+  }
+
+  // Make sure the destination directory exists
+  File destDir = new File( cacheDir );
+  if ( !destDir.exists() ) {
+    destDir.mkdirs();
+  }
+
+  File destFile = new File( destDir, fileName );
+
+  try {
+    // Delete any previous copy with the same name to keep cache clean
+    if ( destFile.exists() ) {
+      destFile.delete();
+    }
+    destFile.createNewFile();
+
+    InputStream src = getContentResolver().openInputStream( qgzUri );
+    copyFile( src, destFile );   // reuses the existing copyFile() helper
+
+    // Return a file:// URI string – C++ strips the prefix if needed
+    return Uri.fromFile( destFile ).toString();
+
+  } catch ( IOException e ) {
+    Log.e( TAG, "importQgzFile – IOException: " + e.getMessage() );
+    return "";
+  } catch ( SecurityException e ) {
+    Log.e( TAG, "importQgzFile – SecurityException (URI permission gone?): "
+                + e.getMessage() );
+    return "";
+  }
+}
+
   public String homePath()
   {
     return getFilesDir().getAbsolutePath();

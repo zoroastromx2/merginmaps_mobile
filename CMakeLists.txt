@@ -429,3 +429,9 @@ endif ()
 if(TARGET MerginMaps)
     target_link_libraries(MerginMaps PUBLIC ${PROTOBUF_LIBRARIES})
 endif()
+
+# ── FilePickerManager ────────────────────────────────────────────────────────
+#target_sources( merginmaps PRIVATE
+#  filepickermanager.h
+#  filepickermanager.cpp
+#)

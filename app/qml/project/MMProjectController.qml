@@ -20,6 +20,8 @@ import "../inputs"
 import "../account"
 import "../dialogs"
 
+//import "MMImportProjectPage.qml"   // ← añadir junto a los otros imports locales
+
 Item {
   id: root
 
@@ -397,8 +399,18 @@ Item {
             iconSourceSelected: __style.globalFilledIcon
             onClicked: projectsPage.state = "explore"
           }
+
+          MMToolbarButton {
+                  id: importLocalBtn
+
+                  text: qsTr( "Import" )
+                  iconSource: __style.folderIcon        // o el ícono que prefieras de mmstyle.h
+                  iconSourceSelected: __style.folderIcon
+                  onClicked: stackView.push( importProjectPageComp )
+          }
         }
       }
+
 
       function refreshProjectList( keepSearchFilter = false ) {
         stackView.pending = true
@@ -612,6 +624,25 @@ Item {
 
       onCreateWorkspaceRequested: {
         createWorkspaceController.createNewWorkspace()
+      }
+    }
+  }
+
+  // ── Import Local Project Page ──────────────────────────────────────────────
+  Component {
+    id: importProjectPageComp
+
+    MMImportProjectPage {
+      id: importProjectPage
+
+      height: root.height
+      width: root.width
+
+      onBackClicked: stackView.popOnePageOrClose()
+
+      onOpenProjectRequested: function( projectFilePath ) {
+        stackView.clearStackAndClose()
+        root.setupProjectOpen( projectFilePath )
       }
     }
   }
