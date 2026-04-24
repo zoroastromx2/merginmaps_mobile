@@ -4,4 +4,7 @@
     <external-path
         name="app_files"
         path="Android/data/uk.co.lutraconsulting/" />
+    <cache-path name="cache" path="." />           <!-- ← cubre QStandardPaths::CacheLocation -->
+    <external-files-path name="external" path="." />
 </paths>
+
