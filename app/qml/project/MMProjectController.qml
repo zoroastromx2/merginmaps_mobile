@@ -40,7 +40,7 @@ Item {
   }
 
   function hidePanel() {
-    if ( root.activeProjectId ) {
+    if ( root.activeProjectId || __activeProject.isProjectLoaded() ) {
       root.visible = false
       stackView.clearStackAndClose()
       root.closed()
