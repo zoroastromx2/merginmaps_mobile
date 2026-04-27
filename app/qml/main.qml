@@ -645,6 +645,23 @@ ApplicationWindow {
     onClosed: stateManager.state = "map"
   }
 
+  // ── Handle .qgz files opened via ACTION_VIEW (external file manager) ───────
+  // When the user taps a .qgz file outside the app, Java copies it to the
+  // cache and notifies C++ through FilePickerManager::externalProjectOpened.
+  // We load it here the same way a normal project selection would.
+  Connections {
+    target: __filePickerManager
+
+    function onExternalProjectOpened( filePath ) {
+      if ( filePath === "" ) return
+      if ( __activeProject.load( filePath ) ) {
+        stateManager.state = "map"
+      } else {
+        __notificationModel.addError( qsTr( "Failed to open external project: " ) + filePath )
+      }
+    }
+  }
+
 /*
   Gestión de Vistas Dinámicas (StackView y Loader): *
   Usa un StackView para deslizar paneles sobre el mapa (por ejemplo, el menú de capas) con animaciones fluidas de entrada y salida.

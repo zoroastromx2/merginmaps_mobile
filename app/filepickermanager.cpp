@@ -16,6 +16,8 @@
 #include <QJniObject>
 #include <QStandardPaths>
 #include <QDir>
+#include <QGuiApplication>
+#include <QCoreApplication>
 
 // ── Windows ──────────────────────────────────────────────────────────────────
 #elif defined( Q_OS_WIN )
@@ -31,6 +33,21 @@
 FilePickerManager::FilePickerManager( QObject *parent )
     : QObject( parent )
 {
+#ifdef ANDROID
+    // Poll for files that arrived via ACTION_VIEW (user tapped a .qgz in an
+    // external file manager) every time the app comes to the foreground.
+    QObject::connect(
+        qobject_cast<QGuiApplication *>( QCoreApplication::instance() ),
+        &QGuiApplication::applicationStateChanged,
+        this,
+        [ this ]( Qt::ApplicationState state )
+        {
+            if ( state == Qt::ApplicationActive )
+            {
+                checkPendingExternalProject();
+            }
+        } );
+#endif
 }
 
 void FilePickerManager::openFilePicker()
@@ -188,5 +205,27 @@ void FilePickerManager::handleActivityResult( const int receiverRequestCode,
 
     CoreUtils::log( "FilePickerManager", "QGZ imported to: " + posixPath );
     emit fileSelected( posixPath );
+}
+#endif
+
+// ── Android: poll for ACTION_VIEW pending path ────────────────────────────────
+#ifdef ANDROID
+void FilePickerManager::checkPendingExternalProject()
+{
+    // Ask the Java Activity whether a .qgz was opened externally.
+    // getAndConsumeExternalProjectPath() returns "" if nothing is pending.
+    const QString path =
+        QJniObject::callStaticObjectMethod<jstring>(
+            "uk/co/lutraconsulting/MMActivity",
+            "getAndConsumeExternalProjectPath",
+            "()Ljava/lang/String;" )
+        .toString();
+
+    if ( path.isEmpty() )
+        return;
+
+    CoreUtils::log( "FilePickerManager",
+                    "External project received via ACTION_VIEW: " + path );
+    emit externalProjectOpened( path );
 }
 #endif

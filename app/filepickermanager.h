@@ -29,6 +29,11 @@
  *                       URI is copied to the app's cache directory and the
  *                       resulting POSIX path is emitted through fileSelected().
  *
+ *                       Also polls for files opened via ACTION_VIEW (i.e. the
+ *                       user tapped a .qgz in an external file manager).  When
+ *                       such a file is detected, externalProjectOpened() is
+ *                       emitted with the same POSIX path convention.
+ *
  * Register in main.cpp as a singleton:
  *   qmlRegisterSingletonInstance("mm", 1, 0, "FilePickerManager",
  *                                &filePickerManager);
@@ -61,6 +66,16 @@ public:
     void handleActivityResult( int receiverRequestCode,
                               int resultCode,
                               const QJniObject &data ) override;
+
+    /**
+     * Queries the Java Activity for a .qgz path that was received via
+     * ACTION_VIEW (external file manager tap) and, if one is available,
+     * emits externalProjectOpened().
+     *
+     * Connected to QGuiApplication::applicationStateChanged so it runs
+     * whenever the app comes to the foreground.
+     */
+    void checkPendingExternalProject();
 #endif
 
 signals:
@@ -70,6 +85,13 @@ signals:
 
     /// Emitted when the user cancels the picker or an error occurs.
     void filePickerCancelled();
+
+    /**
+     * Emitted when the user opened a .qgz file from an external file manager
+     * (ACTION_VIEW intent).  The path is an absolute POSIX path, ready for
+     * QgsProject::read().
+     */
+    void externalProjectOpened( const QString &filePath );
 
     /// Convenience signals for UI error/info toasts (mirrors AndroidUtils)
     void notifyError( const QString &msg );

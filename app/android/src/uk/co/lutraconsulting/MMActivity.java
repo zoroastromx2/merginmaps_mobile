@@ -36,6 +36,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.content.ActivityNotFoundException;
+import android.provider.DocumentsContract;
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -58,6 +59,20 @@ public class MMActivity extends QtActivity
   private String localTargetPath = null;
   private String imageCode = null;
 
+  // Path of a .qgz file copied to the app cache by onNewIntent / onResume.
+  // C++ reads and clears this via getAndConsumeExternalProjectPath().
+  private static volatile String sPendingExternalProjectPath = null;
+
+  // Track whether the launch / new intent has already been processed so
+  // onResume does not handle the same intent a second time.
+  private boolean mIntentHandled = false;
+
+  // ── Extensions of layer files that may live alongside a .qgz project ───
+  private static final String[] SIBLING_EXTENSIONS = {
+    ".gpkg", ".shp", ".shx", ".dbf", ".prj", ".cpg", ".qmd", ".tif",
+    ".geojson", ".json", ".kml", ".kmz", ".sqlite", ".db"
+  };
+
   @Override
   public void onCreate(Bundle savedInstanceState)
   {
@@ -71,6 +86,177 @@ public class MMActivity extends QtActivity
     splashScreen.setKeepOnScreenCondition( () -> keepSplashScreenVisible );
 
     setCustomStatusAndNavBar();
+  }
+
+  @Override
+  protected void onNewIntent( Intent intent ) {
+    super.onNewIntent( intent );
+    // Update getIntent() so that onResume sees the latest intent
+    setIntent( intent );
+    mIntentHandled = false;
+    handleViewIntent( intent );
+    mIntentHandled = true;
+  }
+
+  @Override
+  protected void onResume() {
+    super.onResume();
+    if ( !mIntentHandled ) {
+      Intent intent = getIntent();
+      if ( intent != null ) {
+        handleViewIntent( intent );
+      }
+      mIntentHandled = true;
+    }
+  }
+
+  /**
+   * Handles ACTION_VIEW intents that carry a .qgz file URI.
+   * Copies the file (and best-effort sibling layer files) to the app cache
+   * and stores the resulting POSIX path so C++ can retrieve it.
+   */
+  private void handleViewIntent( Intent intent ) {
+    if ( intent == null ) return;
+    if ( !Intent.ACTION_VIEW.equals( intent.getAction() ) ) return;
+
+    Uri data = intent.getData();
+    if ( data == null ) return;
+
+    String fileName = getFileName( data );
+    if ( fileName == null || !fileName.toLowerCase().endsWith( ".qgz" ) ) return;
+
+    // Use a dedicated sub-directory inside the cache so project files are
+    // grouped and can be cleaned up together.
+    File cacheDir = new File( getCacheDir(), "external_projects" );
+    if ( !cacheDir.exists() ) {
+      cacheDir.mkdirs();
+    }
+
+    String cacheDirPath = cacheDir.getAbsolutePath();
+    String resultPath = importQgzFile( data, cacheDirPath );
+
+    if ( resultPath == null || resultPath.isEmpty() ) {
+      Log.e( TAG, "handleViewIntent – importQgzFile failed for URI: " + data );
+      return;
+    }
+
+    // Strip the file:// prefix if present
+    if ( resultPath.startsWith( "file://" ) ) {
+      resultPath = Uri.parse( resultPath ).getPath();
+    }
+
+    // Best-effort: also copy layer files that share the same base name
+    String baseName = fileName.substring( 0, fileName.lastIndexOf( '.' ) );
+    trySiblingFiles( data, baseName, cacheDirPath );
+
+    Log.d( TAG, "handleViewIntent – external project ready at: " + resultPath );
+    sPendingExternalProjectPath = resultPath;
+  }
+
+  /**
+   * Returns the POSIX path of the last externally opened .qgz file and then
+   * clears it so the same path is not returned again on subsequent calls.
+   *
+   * Called from C++ via JNI in FilePickerManager::checkPendingExternalProject().
+   */
+  public static String getAndConsumeExternalProjectPath() {
+    String path = sPendingExternalProjectPath;
+    sPendingExternalProjectPath = null;
+    return path != null ? path : "";
+  }
+
+  /**
+   * Attempts to copy layer files that share the same base name as the opened
+   * .qgz project (e.g. parcelas.gpkg, parcelas.shp …) to the cache directory.
+   *
+   * Works for DocumentsProvider URIs (Files app, OTG storage …). Silently
+   * skips the step for providers that do not support child-document queries.
+   *
+   * @param qgzUri   The content:// URI of the .qgz file.
+   * @param baseName Base name without extension (lower-cased for comparison).
+   * @param cacheDir Absolute path of the destination directory.
+   */
+  private void trySiblingFiles( Uri qgzUri, String baseName, String cacheDir ) {
+    if ( !"content".equals( qgzUri.getScheme() ) ) return;
+
+    try {
+      // Retrieve the raw document ID carried in the URI
+      String rawDocId = DocumentsContract.getDocumentId( qgzUri );
+      if ( rawDocId == null ) return;
+
+      // Derive the parent document ID by stripping the filename segment
+      int lastSlash = rawDocId.lastIndexOf( ':' );
+      if ( lastSlash < 0 ) lastSlash = rawDocId.lastIndexOf( '/' );
+      if ( lastSlash < 0 ) return;
+
+      String parentId = rawDocId.substring( 0, lastSlash );
+
+      // Build a tree URI for the parent; this is the URI we query for children
+      Uri treeRoot = DocumentsContract.buildTreeDocumentUri(
+          qgzUri.getAuthority(), parentId );
+      Uri childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(
+          treeRoot, parentId );
+
+      Cursor c = getContentResolver().query(
+          childrenUri,
+          new String[] {
+            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+            DocumentsContract.Document.COLUMN_DISPLAY_NAME
+          },
+          null, null, null );
+
+      if ( c == null ) return;
+
+      try {
+        while ( c.moveToNext() ) {
+          String displayName = c.getString( 1 );
+          if ( displayName == null ) continue;
+
+          int dotIdx = displayName.lastIndexOf( '.' );
+          String siblingBase = ( dotIdx > 0
+              ? displayName.substring( 0, dotIdx )
+              : displayName ).toLowerCase();
+          String siblingExt = dotIdx > 0
+              ? displayName.substring( dotIdx ).toLowerCase()
+              : "";
+
+          if ( !siblingBase.equals( baseName.toLowerCase() ) ) continue;
+
+          boolean isTarget = false;
+          for ( String ext : SIBLING_EXTENSIONS ) {
+            if ( ext.equals( siblingExt ) ) {
+              isTarget = true;
+              break;
+            }
+          }
+          if ( !isTarget ) continue;
+
+          String siblingDocId = c.getString( 0 );
+          Uri siblingUri = DocumentsContract.buildDocumentUriUsingTree(
+              treeRoot, siblingDocId );
+
+          File dest = new File( cacheDir, displayName );
+          try {
+            InputStream is = getContentResolver().openInputStream( siblingUri );
+            if ( is == null ) continue;
+            if ( dest.exists() ) dest.delete();
+            dest.createNewFile();
+            copyFile( is, dest );
+            Log.d( TAG, "trySiblingFiles – copied: " + displayName );
+          } catch ( IOException | SecurityException e ) {
+            Log.w( TAG, "trySiblingFiles – skipping " + displayName
+                + ": " + e.getMessage() );
+          }
+        }
+      } finally {
+        c.close();
+      }
+
+    } catch ( IllegalArgumentException | UnsupportedOperationException e ) {
+      // Not a DocumentsProvider URI – silently ignore
+      Log.d( TAG, "trySiblingFiles – not a documents URI, skipping: "
+          + e.getMessage() );
+    }
   }
 
 /**
