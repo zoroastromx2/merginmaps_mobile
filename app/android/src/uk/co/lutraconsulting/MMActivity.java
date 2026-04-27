@@ -127,7 +127,7 @@ public class MMActivity extends QtActivity
 
     // Use a dedicated sub-directory inside the cache so project files are
     // grouped and can be cleaned up together.
-    File cacheDir = new File( getCacheDir(), "external_projects" );
+    File cacheDir = new File( getExternalFilesDir( null ), "external_projects" );
     if ( !cacheDir.exists() ) {
       cacheDir.mkdirs();
     }
@@ -166,6 +166,19 @@ public class MMActivity extends QtActivity
     String path = sPendingExternalProjectPath;
     sPendingExternalProjectPath = null;
     return path != null ? path : "";
+  }
+
+  /**
+   * Returns the absolute path of the external "external_projects" directory
+   * (getExternalFilesDir(null)/external_projects), creating it if needed.
+   * Called from C++ via JNI in FilePickerManager::handleActivityResult().
+   */
+  public String getExternalProjectsDir() {
+    File dir = new File( getExternalFilesDir( null ), "external_projects" );
+    if ( !dir.exists() ) {
+      dir.mkdirs();
+    }
+    return dir.getAbsolutePath();
   }
 
   /**

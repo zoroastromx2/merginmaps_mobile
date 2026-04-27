@@ -185,14 +185,18 @@ void FilePickerManager::handleActivityResult( const int receiverRequestCode,
     const QJniObject activity =
         QJniObject( QNativeInterface::QAndroidApplication::context() );
 
+    const QString externalProjectsDir =
+        activity.callObjectMethod(
+                    "getExternalProjectsDir",
+                    "()Ljava/lang/String;" )
+            .toString();
+
     const QString localPath =
         activity.callObjectMethod(
                     "importQgzFile",
                     "(Landroid/net/Uri;Ljava/lang/String;)Ljava/lang/String;",
                     uri.object(),
-                    QJniObject::fromString(
-                        QStandardPaths::writableLocation( QStandardPaths::CacheLocation ) )
-                        .object<jstring>() )
+                    QJniObject::fromString( externalProjectsDir ).object<jstring>() )
             .toString();
 
     if ( localPath.isEmpty() )
@@ -220,7 +224,7 @@ void FilePickerManager::checkPendingExternalProject()
     // Ask the Java Activity whether a .qgz was opened externally.
     // getAndConsumeExternalProjectPath() returns "" if nothing is pending.
     const QString path =
-        QJniObject::callStaticObjectMethod<jstring>(
+        QJniObject::callStaticObjectMethod(
             "uk/co/lutraconsulting/MMActivity",
             "getAndConsumeExternalProjectPath",
             "()Ljava/lang/String;" )
