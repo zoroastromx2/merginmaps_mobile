@@ -36,17 +36,22 @@ FilePickerManager::FilePickerManager( QObject *parent )
 #ifdef ANDROID
     // Poll for files that arrived via ACTION_VIEW (user tapped a .qgz in an
     // external file manager) every time the app comes to the foreground.
-    QObject::connect(
-        qobject_cast<QGuiApplication *>( QCoreApplication::instance() ),
-        &QGuiApplication::applicationStateChanged,
-        this,
-        [ this ]( Qt::ApplicationState state )
-        {
-            if ( state == Qt::ApplicationActive )
+    QGuiApplication *guiApp =
+        qobject_cast<QGuiApplication *>( QCoreApplication::instance() );
+    if ( guiApp )
+    {
+        QObject::connect(
+            guiApp,
+            &QGuiApplication::applicationStateChanged,
+            this,
+            [ this ]( Qt::ApplicationState state )
             {
-                checkPendingExternalProject();
-            }
-        } );
+                if ( state == Qt::ApplicationActive )
+                {
+                    checkPendingExternalProject();
+                }
+            } );
+    }
 #endif
 }
 

@@ -146,8 +146,11 @@ public class MMActivity extends QtActivity
     }
 
     // Best-effort: also copy layer files that share the same base name
-    String baseName = fileName.substring( 0, fileName.lastIndexOf( '.' ) );
-    trySiblingFiles( data, baseName, cacheDirPath );
+    int dotIdx = fileName.lastIndexOf( '.' );
+    if ( dotIdx > 0 ) {
+      String baseName = fileName.substring( 0, dotIdx );
+      trySiblingFiles( data, baseName, cacheDirPath );
+    }
 
     Log.d( TAG, "handleViewIntent – external project ready at: " + resultPath );
     sPendingExternalProjectPath = resultPath;
@@ -185,11 +188,11 @@ public class MMActivity extends QtActivity
       if ( rawDocId == null ) return;
 
       // Derive the parent document ID by stripping the filename segment
-      int lastSlash = rawDocId.lastIndexOf( ':' );
-      if ( lastSlash < 0 ) lastSlash = rawDocId.lastIndexOf( '/' );
-      if ( lastSlash < 0 ) return;
+      int separatorIndex = rawDocId.lastIndexOf( ':' );
+      if ( separatorIndex < 0 ) separatorIndex = rawDocId.lastIndexOf( '/' );
+      if ( separatorIndex < 0 ) return;
 
-      String parentId = rawDocId.substring( 0, lastSlash );
+      String parentId = rawDocId.substring( 0, separatorIndex );
 
       // Build a tree URI for the parent; this is the URI we query for children
       Uri treeRoot = DocumentsContract.buildTreeDocumentUri(
