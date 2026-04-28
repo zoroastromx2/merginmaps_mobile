@@ -128,9 +128,9 @@ void FilePickerManager::openFilePicker()
 #else
     const QString path = QFileDialog::getOpenFileName(
         nullptr,
-        tr( "Select QGIS Project" ),
+        tr( "Selecciona el proyecto QGIS" ),
         QString(),               // start dir – OS remembers last one
-        tr( "QGIS Projects (*.qgz);;All files (*)" ) );
+        tr( "Proyectos QGIS (*.qgz);;Todos los archivos (*)" ) );
 
     if ( path.isEmpty() )
     {
