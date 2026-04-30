@@ -652,22 +652,29 @@ ApplicationWindow {
   Connections {
     target: __filePickerManager
 
-    function onFileSelected( filePath ) {
+    function registerAndLoad( filePath, errorMsg ) {
       if ( filePath === "" ) return
+      var lastSlash = filePath.lastIndexOf( '/' )
+      if ( lastSlash < 0 ) {
+        __notificationModel.addError( errorMsg + filePath )
+        return
+      }
+      var dir  = filePath.substring( 0, lastSlash )
+      var name = filePath.substring( lastSlash + 1 ).replace( /\.[^/.]+$/, "" )
+      __localProjectsManager.addLocalProject( dir, name )
       if ( __activeProject.load( filePath ) ) {
         stateManager.state = "map"
       } else {
-        __notificationModel.addError( qsTr( "No se pudo abrir el proyecto: " ) + filePath )
+        __notificationModel.addError( errorMsg + filePath )
       }
     }
 
+    function onFileSelected( filePath ) {
+      registerAndLoad( filePath, qsTr( "No se pudo abrir el proyecto: " ) )
+    }
+
     function onExternalProjectOpened( filePath ) {
-      if ( filePath === "" ) return
-      if ( __activeProject.load( filePath ) ) {
-        stateManager.state = "map"
-      } else {
-        __notificationModel.addError( qsTr( "Failed to open external project: " ) + filePath )
-      }
+      registerAndLoad( filePath, qsTr( "Failed to open external project: " ) )
     }
   }
 

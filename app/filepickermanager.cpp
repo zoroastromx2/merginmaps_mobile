@@ -213,6 +213,14 @@ void FilePickerManager::handleActivityResult( const int receiverRequestCode,
         posixPath = QUrl( posixPath ).toLocalFile();
 
     CoreUtils::log( "FilePickerManager", "QGZ imported to: " + posixPath );
+
+    // Copy all sibling layer files (e.g. BD.gpkg) that the project may reference
+    activity.callMethod<void>(
+        "copySiblingFiles",
+        "(Landroid/net/Uri;Ljava/lang/String;)V",
+        uri.object(),
+        QJniObject::fromString( externalProjectsDir ).object<jstring>() );
+
     emit fileSelected( posixPath );
 }
 #endif

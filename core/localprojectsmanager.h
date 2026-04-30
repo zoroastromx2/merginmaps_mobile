@@ -39,7 +39,7 @@ class LocalProjectsManager : public QObject
     LocalProject projectFromMerginName( const QString &projectNamespace, const QString &projectName ) const;
 
     //! Adds entry about newly created project
-    void addLocalProject( const QString &projectDir, const QString &projectName );
+    Q_INVOKABLE void addLocalProject( const QString &projectDir, const QString &projectName );
 
     //! Adds entry for downloaded project
     void addMerginProject( const QString &projectDir, const QString &projectNamespace, const QString &projectName );
