@@ -533,7 +533,7 @@ ApplicationWindow {
               text: qsTr("Abrir Archivo") // Cambié el texto // traducir
               iconSource: __style.homeIcon
               onClicked: {
-                projectFileDialog.open() // Ahora este botón abre el explorador
+                __filePickerManager.openFilePicker()
               }
             }
 
@@ -651,6 +651,15 @@ ApplicationWindow {
   // We load it here the same way a normal project selection would.
   Connections {
     target: __filePickerManager
+
+    function onFileSelected( filePath ) {
+      if ( filePath === "" ) return
+      if ( __activeProject.load( filePath ) ) {
+        stateManager.state = "map"
+      } else {
+        __notificationModel.addError( qsTr( "No se pudo abrir el proyecto: " ) + filePath )
+      }
+    }
 
     function onExternalProjectOpened( filePath ) {
       if ( filePath === "" ) return
