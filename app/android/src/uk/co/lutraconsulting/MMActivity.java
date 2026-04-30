@@ -55,9 +55,13 @@ public class MMActivity extends QtActivity
 {
   private static final String TAG = "Mergin Maps Activity";
   private static final int MEDIA_CODE = 101;
+  private static final int OPEN_DOCUMENT_TREE_CODE = 102;
   private boolean keepSplashScreenVisible = true;
   private String localTargetPath = null;
   private String imageCode = null;
+
+  // Stores the destination directory while waiting for ACTION_OPEN_DOCUMENT_TREE result
+  private String mPendingSiblingDestDir = null;
 
   // Path of a .qgz file copied to the app cache by onNewIntent / onResume.
   // C++ reads and clears this via getAndConsumeExternalProjectPath().
@@ -266,9 +270,9 @@ public class MMActivity extends QtActivity
         c.close();
       }
 
-    } catch ( IllegalArgumentException | UnsupportedOperationException e ) {
-      // Not a DocumentsProvider URI – silently ignore
-      Log.d( TAG, "trySiblingFiles – not a documents URI, skipping: "
+    } catch ( IllegalArgumentException | UnsupportedOperationException | SecurityException e ) {
+      // Not a DocumentsProvider URI or no tree permission – silently ignore
+      Log.d( TAG, "trySiblingFiles – not a documents URI or no tree permission, skipping: "
           + e.getMessage() );
     }
   }
@@ -298,6 +302,98 @@ public class MMActivity extends QtActivity
       Uri childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(
           treeRoot, parentId );
 
+      Cursor c;
+      try {
+        c = getContentResolver().query(
+            childrenUri,
+            new String[] {
+              DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+              DocumentsContract.Document.COLUMN_DISPLAY_NAME
+            },
+            null, null, null );
+      } catch ( SecurityException se ) {
+        // No tree permission granted for this URI – ask the user to select the folder
+        Log.d( TAG, "trySiblingFilesAll – no tree permission, requesting ACTION_OPEN_DOCUMENT_TREE: "
+            + se.getMessage() );
+        mPendingSiblingDestDir = destDir;
+        Toast.makeText( this,
+            "Para copiar las capas del proyecto, selecciona la carpeta que contiene el archivo .qgz",
+            Toast.LENGTH_LONG ).show();
+        Intent treeIntent = new Intent( Intent.ACTION_OPEN_DOCUMENT_TREE );
+        treeIntent.putExtra( DocumentsContract.EXTRA_INITIAL_URI, treeRoot );
+        startActivityForResult( treeIntent, OPEN_DOCUMENT_TREE_CODE );
+        return;
+      }
+
+      if ( c == null ) return;
+
+      try {
+        copySiblingsFromCursor( c, treeRoot, destDir );
+      } finally {
+        c.close();
+      }
+
+    } catch ( IllegalArgumentException | UnsupportedOperationException | SecurityException e ) {
+      Log.d( TAG, "trySiblingFilesAll – no tree permission or not a documents URI, skipping: "
+          + e.getMessage() );
+    }
+  }
+
+  /**
+   * Iterates a children cursor and copies all sibling layer files to destDir.
+   *
+   * @param c        Open cursor over DocumentsContract children columns (doc-id, display-name).
+   * @param treeRoot Tree URI used to build per-document URIs.
+   * @param destDir  Absolute path of the destination directory.
+   */
+  private void copySiblingsFromCursor( Cursor c, Uri treeRoot, String destDir ) {
+    while ( c.moveToNext() ) {
+      String displayName = c.getString( 1 );
+      if ( displayName == null ) continue;
+
+      int dotIdx = displayName.lastIndexOf( '.' );
+      String ext = dotIdx > 0 ? displayName.substring( dotIdx ).toLowerCase() : "";
+
+      boolean isTarget = false;
+      for ( String e : SIBLING_EXTENSIONS ) {
+        if ( e.equals( ext ) ) { isTarget = true; break; }
+      }
+      if ( !isTarget ) continue;
+
+      String siblingDocId = c.getString( 0 );
+      Uri siblingUri = DocumentsContract.buildDocumentUriUsingTree( treeRoot, siblingDocId );
+
+      File dest = new File( destDir, displayName );
+      try {
+        InputStream is = getContentResolver().openInputStream( siblingUri );
+        if ( is == null ) continue;
+        if ( dest.exists() && !dest.delete() ) {
+          Log.w( TAG, "copySiblingsFromCursor – could not delete existing file: " + displayName );
+          continue;
+        }
+        if ( !dest.createNewFile() ) {
+          Log.w( TAG, "copySiblingsFromCursor – could not create file: " + displayName );
+          continue;
+        }
+        copyFile( is, dest );
+        Log.d( TAG, "copySiblingsFromCursor – copied: " + displayName );
+      } catch ( IOException | SecurityException e ) {
+        Log.w( TAG, "copySiblingsFromCursor – skipping " + displayName + ": " + e.getMessage() );
+      }
+    }
+  }
+
+  /**
+   * Copies all sibling layer files reachable from an already-granted tree URI to destDir.
+   *
+   * @param treeUri  A tree URI for which the app has been granted read permission.
+   * @param destDir  Absolute path of the destination directory.
+   */
+  private void copySiblingsFromTreeUri( Uri treeUri, String destDir ) {
+    try {
+      String treeDocId = DocumentsContract.getTreeDocumentId( treeUri );
+      Uri childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree( treeUri, treeDocId );
+
       Cursor c = getContentResolver().query(
           childrenUri,
           new String[] {
@@ -309,43 +405,35 @@ public class MMActivity extends QtActivity
       if ( c == null ) return;
 
       try {
-        while ( c.moveToNext() ) {
-          String displayName = c.getString( 1 );
-          if ( displayName == null ) continue;
-
-          int dotIdx = displayName.lastIndexOf( '.' );
-          String ext = dotIdx > 0 ? displayName.substring( dotIdx ).toLowerCase() : "";
-
-          boolean isTarget = false;
-          for ( String e : SIBLING_EXTENSIONS ) {
-            if ( e.equals( ext ) ) { isTarget = true; break; }
-          }
-          if ( !isTarget ) continue;
-
-          String siblingDocId = c.getString( 0 );
-          Uri siblingUri = DocumentsContract.buildDocumentUriUsingTree( treeRoot, siblingDocId );
-
-          File dest = new File( destDir, displayName );
-          try {
-            InputStream is = getContentResolver().openInputStream( siblingUri );
-            if ( is == null ) continue;
-            if ( dest.exists() && !dest.delete() ) {
-              Log.w( TAG, "trySiblingFilesAll – could not delete existing file: " + displayName );
-              continue;
-            }
-            dest.createNewFile();
-            copyFile( is, dest );
-            Log.d( TAG, "trySiblingFilesAll – copied: " + displayName );
-          } catch ( IOException | SecurityException e ) {
-            Log.w( TAG, "trySiblingFilesAll – skipping " + displayName + ": " + e.getMessage() );
-          }
-        }
+        copySiblingsFromCursor( c, treeUri, destDir );
       } finally {
         c.close();
       }
+    } catch ( IllegalArgumentException | UnsupportedOperationException | SecurityException e ) {
+      Log.w( TAG, "copySiblingsFromTreeUri – failed: " + e.getMessage() );
+    }
+  }
 
-    } catch ( IllegalArgumentException | UnsupportedOperationException e ) {
-      Log.d( TAG, "trySiblingFilesAll – not a documents URI, skipping: " + e.getMessage() );
+  @Override
+  protected void onActivityResult( int requestCode, int resultCode, Intent data ) {
+    super.onActivityResult( requestCode, resultCode, data );
+
+    if ( requestCode == OPEN_DOCUMENT_TREE_CODE ) {
+      if ( resultCode == RESULT_OK && data != null ) {
+        Uri treeUri = data.getData();
+        if ( treeUri != null ) {
+          // Persist the permission so it survives app restarts
+          getContentResolver().takePersistableUriPermission(
+              treeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION );
+
+          if ( mPendingSiblingDestDir != null ) {
+            copySiblingsFromTreeUri( treeUri, mPendingSiblingDestDir );
+          }
+        }
+      } else {
+        Log.d( TAG, "onActivityResult – OPEN_DOCUMENT_TREE cancelled or failed" );
+      }
+      mPendingSiblingDestDir = null;
     }
   }
 
