@@ -145,12 +145,10 @@ public class MMActivity extends QtActivity
       resultPath = Uri.parse( resultPath ).getPath();
     }
 
-    // Best-effort: also copy layer files that share the same base name
-    int dotIdx = fileName.lastIndexOf( '.' );
-    if ( dotIdx > 0 ) {
-      String baseName = fileName.substring( 0, dotIdx );
-      trySiblingFiles( data, baseName, cacheDirPath );
-    }
+    // Best-effort: copy ALL layer files in the same directory, regardless of
+    // base name, so projects that reference layers with different names (e.g.
+    // manzanas01.qgz referencing BD.gpkg) are fully self-contained.
+    trySiblingFilesAll( data, cacheDirPath );
 
     Log.d( TAG, "handleViewIntent – external project ready at: " + resultPath );
     sPendingExternalProjectPath = resultPath;
@@ -273,6 +271,90 @@ public class MMActivity extends QtActivity
       Log.d( TAG, "trySiblingFiles – not a documents URI, skipping: "
           + e.getMessage() );
     }
+  }
+
+  /**
+   * Copies ALL layer files found in the same directory as qgzUri to destDir,
+   * regardless of their base name.  This is needed when the project references
+   * layers whose names differ from the .qgz file (e.g. manzanas01.qgz → BD.gpkg).
+   *
+   * Works only for DocumentsProvider URIs; silently skips other URI types.
+   */
+  private void trySiblingFilesAll( Uri qgzUri, String destDir ) {
+    if ( !"content".equals( qgzUri.getScheme() ) ) return;
+
+    try {
+      String rawDocId = DocumentsContract.getDocumentId( qgzUri );
+      if ( rawDocId == null ) return;
+
+      int separatorIndex = rawDocId.lastIndexOf( ':' );
+      if ( separatorIndex < 0 ) separatorIndex = rawDocId.lastIndexOf( '/' );
+      if ( separatorIndex < 0 ) return;
+
+      String parentId = rawDocId.substring( 0, separatorIndex );
+
+      Uri treeRoot = DocumentsContract.buildTreeDocumentUri(
+          qgzUri.getAuthority(), parentId );
+      Uri childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(
+          treeRoot, parentId );
+
+      Cursor c = getContentResolver().query(
+          childrenUri,
+          new String[] {
+            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+            DocumentsContract.Document.COLUMN_DISPLAY_NAME
+          },
+          null, null, null );
+
+      if ( c == null ) return;
+
+      try {
+        while ( c.moveToNext() ) {
+          String displayName = c.getString( 1 );
+          if ( displayName == null ) continue;
+
+          int dotIdx = displayName.lastIndexOf( '.' );
+          String ext = dotIdx > 0 ? displayName.substring( dotIdx ).toLowerCase() : "";
+
+          boolean isTarget = false;
+          for ( String e : SIBLING_EXTENSIONS ) {
+            if ( e.equals( ext ) ) { isTarget = true; break; }
+          }
+          if ( !isTarget ) continue;
+
+          String siblingDocId = c.getString( 0 );
+          Uri siblingUri = DocumentsContract.buildDocumentUriUsingTree( treeRoot, siblingDocId );
+
+          File dest = new File( destDir, displayName );
+          try {
+            InputStream is = getContentResolver().openInputStream( siblingUri );
+            if ( is == null ) continue;
+            if ( dest.exists() && !dest.delete() ) {
+              Log.w( TAG, "trySiblingFilesAll – could not delete existing file: " + displayName );
+              continue;
+            }
+            dest.createNewFile();
+            copyFile( is, dest );
+            Log.d( TAG, "trySiblingFilesAll – copied: " + displayName );
+          } catch ( IOException | SecurityException e ) {
+            Log.w( TAG, "trySiblingFilesAll – skipping " + displayName + ": " + e.getMessage() );
+          }
+        }
+      } finally {
+        c.close();
+      }
+
+    } catch ( IllegalArgumentException | UnsupportedOperationException e ) {
+      Log.d( TAG, "trySiblingFilesAll – not a documents URI, skipping: " + e.getMessage() );
+    }
+  }
+
+  /**
+   * Public JNI-callable wrapper for trySiblingFilesAll.
+   * Called from C++ in FilePickerManager::handleActivityResult() after importQgzFile().
+   */
+  public void copySiblingFiles( Uri qgzUri, String destDir ) {
+    trySiblingFilesAll( qgzUri, destDir );
   }
 
 /**
