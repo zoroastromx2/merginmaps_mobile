@@ -485,6 +485,16 @@ ApplicationWindow {
         }
       }
 
+      MMToolbarButton {
+        id: addTable
+        text: qsTr("Abrir Archivo") // Cambié el texto // traducir
+        iconSource: __style.homeIcon
+        onClicked: {
+        __filePickerManager.openFilePicker()
+        }
+      }
+
+
 
       MMToolbarButton {
           text: qsTr("Tablas")
@@ -528,14 +538,6 @@ ApplicationWindow {
         }
       }
 
-      MMToolbarButton {
-              id: addTable
-              text: qsTr("Abrir Archivo") // Cambié el texto // traducir
-              iconSource: __style.homeIcon
-              onClicked: {
-                __filePickerManager.openFilePicker()
-              }
-            }
 
       MMToolbarButton {
         id: addButton
