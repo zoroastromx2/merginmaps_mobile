@@ -189,7 +189,8 @@ Item {
       onBackClicked: root.hidePanel()
 
       onStateChanged: {
-        __merginApi.pingMergin()
+        // INEGI: Mergin sync disabled — skip ping
+        // __merginApi.pingMergin()
         projectsPage.refreshProjectList()
 
         pageFooter.setActiveButton( projectsPage.state )
@@ -215,6 +216,7 @@ Item {
 
         width: 40 * __dp
         height: width
+        visible: false  // INEGI: Mergin login disabled
 
         anchors.verticalCenter: parent.verticalCenter
 
@@ -388,6 +390,7 @@ Item {
             text: qsTr("Projects")
             iconSource: __style.projectsIcon
             iconSourceSelected: __style.projectsFilledIcon
+            visible: false  // INEGI: Mergin workspace disabled
             onClicked: projectsPage.state = "workspace"
           }
 
@@ -397,6 +400,7 @@ Item {
             text: qsTr("Explore")
             iconSource: __style.globalIcon
             iconSourceSelected: __style.globalFilledIcon
+            visible: false  // INEGI: Mergin explore disabled
             onClicked: projectsPage.state = "explore"
           }
 

@@ -124,14 +124,10 @@ MerginApi::MerginApi( LocalProjectsManager &localProjects, QObject *parent )
 #endif
 
   //
-  // check if the cache is up to date:
-  //  - server url and type
-  //  - user auth and info
-  //  - workspace info
+  // INEGI: Mergin sync disabled — skip server contact at startup
   //
-
-  getServerConfig();
-  pingMergin();
+  // getServerConfig();
+  // pingMergin();
 
   if ( mUserAuth->hasAuthData() )
   {
