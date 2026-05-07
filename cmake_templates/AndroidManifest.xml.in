@@ -36,7 +36,7 @@
     <application 
         android:name="org.qtproject.qt.android.bindings.QtApplication"
         android:hardwareAccelerated="true"
-        android:label="Mergin Maps"
+        android:label="MDM movil"
         android:allowBackup="true"
         android:fullBackupOnly="false"
         android:icon="@mipmap/ic_appicon"
@@ -97,7 +97,7 @@
         <!-- Activity Android native camera -->
         <activity
             android:name="uk.co.lutraconsulting.CameraActivity"
-            android:label="Mergin Maps"
+            android:label="MDM movil"
             android:parentActivityName="uk.co.lutraconsulting.MMActivity"
             android:configChanges="screenLayout|orientation|screenSize"
             >
