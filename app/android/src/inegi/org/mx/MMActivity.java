@@ -7,7 +7,7 @@
  *                                                                         *
  ***************************************************************************/
 
-package uk.co.lutraconsulting;
+package inegi.org.mx;
 
 import org.qtproject.qt.android.bindings.QtActivity;
 
@@ -587,7 +587,7 @@ public String importQgzFile( Uri qgzUri, String cacheDir ) {
 
     try 
     {
-      Uri fileUri = FileProvider.getUriForFile( this, "uk.co.lutraconsulting.fileprovider", file );
+      Uri fileUri = FileProvider.getUriForFile( this, "inegi.org.mx.fileprovider", file );
 
       showFileIntent.setData( fileUri );
 

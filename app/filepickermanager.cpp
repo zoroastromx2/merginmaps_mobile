@@ -233,7 +233,7 @@ void FilePickerManager::checkPendingExternalProject()
     // getAndConsumeExternalProjectPath() returns "" if nothing is pending.
     const QString path =
         QJniObject::callStaticObjectMethod(
-            "uk/co/lutraconsulting/MMActivity",
+            "inegi/org/mx/MMActivity",
             "getAndConsumeExternalProjectPath",
             "()Ljava/lang/String;" )
         .toString();

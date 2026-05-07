@@ -7,7 +7,7 @@
  *                                                                         *
  ***************************************************************************/
 
-package uk.co.lutraconsulting;
+package inegi.org.mx;
 
 import android.util.Log;
 import android.os.Build;
@@ -26,13 +26,13 @@ public class PositionTrackingBroadcastMiddleware {
 
     private static final String TAG = "PositionTrackingBroadcastMiddleware";
 
-    public static final String TRACKING_POSITION_UPDATE_ACTION = "uk.co.lutraconsulting.tracking.position";
+    public static final String TRACKING_POSITION_UPDATE_ACTION = "inegi.org.mx.tracking.position";
 
-    public static final String TRACKING_ALIVE_STATUS_ACTION = "uk.co.lutraconsulting.tracking.alive";
-    public static final String TRACKING_ALIVE_STATUS_TAG = "uk.co.lutraconsulting.tracking.alive.status";
+    public static final String TRACKING_ALIVE_STATUS_ACTION = "inegi.org.mx.tracking.alive";
+    public static final String TRACKING_ALIVE_STATUS_TAG = "inegi.org.mx.tracking.alive.status";
 
-    public static final String TRACKING_STATUS_MESSAGE_ACTION = "uk.co.lutraconsulting.tracking.status";
-    public static final String TRACKING_STATUS_MESSAGE_TAG = "uk.co.lutraconsulting.tracking.status.message";
+    public static final String TRACKING_STATUS_MESSAGE_ACTION = "inegi.org.mx.tracking.status";
+    public static final String TRACKING_STATUS_MESSAGE_TAG = "inegi.org.mx.tracking.status.message";
 
     public PositionTrackingBroadcastMiddleware() {
 
