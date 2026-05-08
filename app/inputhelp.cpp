@@ -18,9 +18,9 @@
 #include <QSysInfo>
 
 const QString helpRoot = QStringLiteral( "https://gaia.inegi.org.mx/mdm6" );
-const QString helpDeskMail = QStringLiteral( "support@merginmaps.com" );
+const QString helpDeskMail = QStringLiteral( "support@inegi.org.mx" );
 const QString mmWeb = QStringLiteral( "https://gaia.inegi.org.mx/mdm6" );
-const QString changelogRss = QStringLiteral( "https://wishlist.merginmaps.com/rss/changelog.xml" );
+const QString changelogRss = QStringLiteral( "https://wishlist.inegi.org.mx/rss/changelog.xml" );
 
 const QString utmTagHelp = QStringLiteral( "?utm_source=input-help&utm_medium=help&utm_campaign=input" );
 const QString utmTagSubscription = QStringLiteral( "?utm_source=input-subs&utm_medium=subs&utm_campaign=input" );
