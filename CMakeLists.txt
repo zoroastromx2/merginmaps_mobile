@@ -67,7 +67,7 @@ project(
   MerginMaps
   VERSION ${MM_VERSION_MAJOR}.${MM_VERSION_MINOR}.${MM_VERSION_PATCH}
   DESCRIPTION "Collect. Share. Publish."
-  HOMEPAGE_URL "https://merginmaps.com"
+  HOMEPAGE_URL "https://inegi.org.mx"
   LANGUAGES CXX
 )
 
