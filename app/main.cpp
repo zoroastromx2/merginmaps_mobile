@@ -407,7 +407,7 @@ int main( int argc, char *argv[] )
     const QString version = CoreUtils::appVersion();
     // Set up the QSettings environment must be done after qapp is created
     QCoreApplication::setOrganizationName( "INEGI" );
-    QCoreApplication::setOrganizationDomain( "inegi.org.mx" );
+    QCoreApplication::setOrganizationDomain( "mx.org.inegi" );
     QCoreApplication::setApplicationName( "Input" ); // used by QSettings
     QCoreApplication::setApplicationVersion( version );
 
