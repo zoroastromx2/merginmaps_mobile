@@ -11,6 +11,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
+import Qt.labs.folderlistmodel
 
 import mm 1.0 as MM
 
@@ -21,19 +22,72 @@ import "../inputs"
  * MMCreateDatabasePage — SQLite database creation page.
  * Follows the MMPage pattern: view only, no business logic.
  * All communication with the backend is done via signals and properties.
+ *
+ * New features:
+ *   • FolderListModel scans the active folder for .db / .sqlite files.
+ *   • A ListView below dbNameInput lets the user pick an existing database.
+ *   • The primary action button reads "Seleccionar" when the typed name
+ *     matches an existing file, and "Crear" otherwise.
+ *   • Signal databaseSelected(name, path) is emitted in "Seleccionar" mode.
  */
 
 MMPage {
   id: root
 
   // ── Propiedades de entrada ────────────────────────────────────────────
-  property string errorMessage: ""    // el Controller escribe aquí si falla
+  property string errorMessage: ""      // el Controller escribe aquí si falla
   property bool   databaseReady: false  // true cuando la BD fue creada con éxito
-  property string createdDbPath: ""   // ruta completa del .db recién creado
+  property string createdDbPath: ""     // ruta completa del .db recién creado
+
+  // Ruta predeterminada usada cuando dbPathInput está vacío.
+  // El Controller (o quien instancie la página) puede sobrescribirla.
+  property string defaultPath: "./"
 
   // ── Señales de salida ─────────────────────────────────────────────────
   signal createDatabaseRequested(string name, string path)
   signal exportDatabaseRequested(string destinationPath)
+  /// Emitida cuando el usuario elige una BD existente (modo "Seleccionar").
+  signal databaseSelected(string name, string path)
+
+  // ── Helpers internos ──────────────────────────────────────────────────
+
+  /// Devuelve la carpeta activa (con barra final garantizada).
+  readonly property string _activeFolder: {
+    var p = dbPathInput.text.trim()
+    if (p === "") p = root.defaultPath
+    if (p !== "" && !p.endsWith("/") && !p.endsWith("\\")) p += "/"
+    return p
+  }
+
+  /// Convierte _activeFolder a una URL que acepta FolderListModel.
+  readonly property string _activeFolderUrl: {
+    var p = root._activeFolder
+    if (p.startsWith("file:")) return p
+    // Windows absolute path (C:/…) needs three slashes; Unix already has leading /
+    if (p.match(/^[A-Za-z]:\//)) return "file:///" + p
+    return "file://" + p
+  }
+
+  /// true cuando el nombre escrito (+ .db o .sqlite) ya existe en la carpeta.
+  readonly property bool _nameAlreadyExists: {
+    var base = dbNameInput.text.trim()
+    if (base === "") return false
+    for (var i = 0; i < dbListModel.count; i++) {
+      var fn = dbListModel.get(i, "fileName")
+      if (fn === base + ".db" || fn === base + ".sqlite" || fn === base) return true
+    }
+    return false
+  }
+
+  // ── Modelo de carpeta ─────────────────────────────────────────────────
+  FolderListModel {
+    id: dbListModel
+    folder: root._activeFolderUrl
+    nameFilters: ["*.db", "*.sqlite"]
+    showDirs: false
+    showFiles: true
+    showHidden: false
+  }
 
   // ── Diálogo: selección de carpeta (campo Ubicación) ───────────────────
   FolderDialog {
@@ -78,7 +132,7 @@ MMPage {
       width: parent.width
       spacing: __style.spacing20
 
-      // Campo: nombre de la BD
+      // ── Campo: nombre de la BD ────────────────────────────────────────
       MMTextInput {
         id: dbNameInput
         Layout.fillWidth: true
@@ -87,7 +141,87 @@ MMPage {
         enabled: !root.databaseReady
       }
 
-      // Campo: ubicación + botón Examinar
+      // ── Lista de bases de datos existentes ────────────────────────────
+      ColumnLayout {
+        Layout.fillWidth: true
+        spacing: __style.spacing8
+        visible: dbListModel.count > 0 && !root.databaseReady
+
+        MMText {
+          text: qsTr("Bases de datos en esta carpeta:")
+          font: __style.p6
+          color: __style.nightColor
+          Layout.fillWidth: true
+        }
+
+        // Contenedor con borde que envuelve la lista
+        Rectangle {
+          Layout.fillWidth: true
+          // Altura máxima: 5 filas de row40; se adapta si hay menos entradas
+          implicitHeight: Math.min(dbListModel.count, 5) * __style.row40
+                          + __style.margin12 * 2
+          color: __style.polarColor
+          radius: __style.radius12
+          border.color: __style.greyColor
+          border.width: __style.width1
+          clip: true
+
+          ListView {
+            id: dbListView
+            anchors {
+              fill: parent
+              margins: __style.margin12
+            }
+            model: dbListModel
+            spacing: __style.spacing4
+            clip: true
+
+            delegate: Rectangle {
+              id: dbDelegate
+              width: dbListView.width
+              height: __style.row40
+              radius: __style.radius8
+              color: delegateArea.containsMouse
+                     ? __style.lightGreenColor
+                     : "transparent"
+
+              // ── Filename label ──────────────────────────────────────
+              MMText {
+                anchors {
+                  verticalCenter: parent.verticalCenter
+                  left: parent.left
+                  right: parent.right
+                  leftMargin: __style.margin8
+                  rightMargin: __style.margin8
+                }
+                text: model.fileName
+                font: __style.p5
+                color: __style.nightColor
+                elide: Text.ElideRight
+              }
+
+              // ── Click area ─────────────────────────────────────────
+              MouseArea {
+                id: delegateArea
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                  // Strip extension so the name field stays clean
+                  var fn = model.fileName
+                  if (fn.endsWith(".db"))
+                    fn = fn.slice(0, -3)
+                  else if (fn.endsWith(".sqlite"))
+                    fn = fn.slice(0, -7)
+                  dbNameInput.text = fn
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // ── Campo: ubicación + botón Examinar ─────────────────────────────
       ColumnLayout {
         Layout.fillWidth: true
         spacing: __style.spacing8
@@ -109,7 +243,7 @@ MMPage {
         }
       }
 
-      // Notificación de error
+      // ── Notificación de error ─────────────────────────────────────────
       MMNotificationBox {
         Layout.fillWidth: true
         visible: root.errorMessage !== ""
@@ -118,7 +252,7 @@ MMPage {
         description: root.errorMessage
       }
 
-      // Notificación de éxito + botón Exportar (visible tras creación exitosa)
+      // ── Notificación de éxito + botón Exportar ────────────────────────
       ColumnLayout {
         Layout.fillWidth: true
         spacing: __style.spacing12
@@ -141,20 +275,37 @@ MMPage {
 
       Item { implicitHeight: __style.spacing20 }
 
-      // Botones de acción
+      // ── Botones de acción ─────────────────────────────────────────────
       RowLayout {
         Layout.fillWidth: true
         spacing: __style.spacing12
 
+        // Botón principal: "Seleccionar" si el nombre ya existe, "Crear" si no.
         MMButton {
-          text: qsTr("Crear")
+          id: primaryActionBtn
           Layout.fillWidth: true
           visible: !root.databaseReady
+
+          text: root._nameAlreadyExists ? qsTr("Seleccionar") : qsTr("Crear")
+
           onClicked: {
-            root.createDatabaseRequested(
-              dbNameInput.text.trim(),
-              dbPathInput.text.trim()
-            )
+            var name = dbNameInput.text.trim()
+            var path = root._activeFolder
+
+            if (root._nameAlreadyExists) {
+              // Resolve the actual filename (prefer .db)
+              var resolvedName = name + ".db"
+              for (var i = 0; i < dbListModel.count; i++) {
+                var fn = dbListModel.get(i, "fileName")
+                if (fn === name + ".db" || fn === name + ".sqlite" || fn === name) {
+                  resolvedName = fn
+                  break
+                }
+              }
+              root.databaseSelected(resolvedName, path)
+            } else {
+              root.createDatabaseRequested(name, path)
+            }
           }
         }
 
