@@ -136,6 +136,14 @@ public:
      */
     Q_INVOKABLE bool exportToCSV(const QString &filePath);
 
+    /**
+     * Copia el archivo de BD activo a una ruta de destino elegida por el usuario.
+     * Funciona en Windows y Android (content:// y file:// URIs).
+     * @param destinationPath Ruta o URI completa de destino (incluyendo nombre de archivo).
+     * @return true si la copia fue exitosa.
+     */
+    Q_INVOKABLE bool copyDatabaseTo(const QString &destinationPath);
+
     // ============== INFORMACIÓN ==============
     /*
     * Obtiene información completa de la base de datos (nombre y tablas)

@@ -87,11 +87,24 @@ Item {
         console.log("Intentando crear BD en: " + fullPath)
 
         if (root.dbManager && root.dbManager.initializeDatabase(fullPath)) {
-          closeAfterSuccessTimer.start()
+          // Marcar como exitosa y guardar ruta — el usuario cierra manualmente
+          databaseReady = true
+          createdDbPath = fullPath
         } else {
           errorMessage = qsTr("Error: ") + (root.dbManager ? root.dbManager.getLastError() : qsTr("DBManager no disponible"))
         }
       }
+
+      onExportDatabaseRequested: function(destPath) {
+        if (root.dbManager) {
+          if (root.dbManager.copyDatabaseTo(destPath)) {
+            console.log("BD exportada a: " + destPath)
+          } else {
+            errorMessage = qsTr("Error al exportar: ") + root.dbManager.getLastError()
+          }
+        }
+      }
+
       onBackClicked: function() { stackView.pop(StackView.PopTransition) }
     }
   }

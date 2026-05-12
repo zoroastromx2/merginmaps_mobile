@@ -10,6 +10,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs
 
 import mm 1.0 as MM
 
@@ -26,15 +27,44 @@ MMPage {
   id: root
 
   // ── Propiedades de entrada ────────────────────────────────────────────
-  property string errorMessage: ""   // el Controller escribe aquí si falla
+  property string errorMessage: ""    // el Controller escribe aquí si falla
+  property bool   databaseReady: false  // true cuando la BD fue creada con éxito
+  property string createdDbPath: ""   // ruta completa del .db recién creado
 
   // ── Señales de salida ─────────────────────────────────────────────────
   signal createDatabaseRequested(string name, string path)
+  signal exportDatabaseRequested(string destinationPath)
+
+  // ── Diálogo: selección de carpeta (campo Ubicación) ───────────────────
+  FolderDialog {
+    id: folderDialog
+    title: qsTr("Seleccionar carpeta de destino")
+    onAccepted: {
+      var folderPath = folderDialog.selectedFolder.toString()
+      if (folderPath.startsWith("file:///")) {
+        folderPath = folderPath.substring(8)
+      } else if (folderPath.startsWith("file://")) {
+        folderPath = folderPath.substring(7)
+      }
+      dbPathInput.text = folderPath
+    }
+  }
+
+  // ── Diálogo: guardar copia de la BD ───────────────────────────────────
+  FileDialog {
+    id: exportFileDialog
+    title: qsTr("Guardar copia de la base de datos")
+    fileMode: FileDialog.SaveFile
+    nameFilters: ["SQLite (*.db *.sqlite)", qsTr("Todos los archivos (*)")]
+    defaultSuffix: "db"
+    onAccepted: {
+      root.exportDatabaseRequested(exportFileDialog.selectedFile.toString())
+    }
+  }
 
   // ── Cabecera ──────────────────────────────────────────────────────────
   pageHeader {
     title: qsTr("Crear Base de Datos")
-    //titleFont: __style.h3
     baseHeaderHeight: __style.row80
     backVisible: true
   }
@@ -54,23 +84,59 @@ MMPage {
         Layout.fillWidth: true
         title: qsTr("Nombre de la Base de Datos")
         placeholderText: qsTr("Ej: miproyecto")
+        enabled: !root.databaseReady
       }
 
-      // Campo: ubicación (opcional)
-      MMTextInput {
-        id: dbPathInput
+      // Campo: ubicación + botón Examinar
+      ColumnLayout {
         Layout.fillWidth: true
-        title: qsTr("Ubicación (dejar vacío para ruta predeterminada)")
-        placeholderText: qsTr("Ej: E:/MisDocumentos/")
+        spacing: __style.spacing8
+
+        MMTextInput {
+          id: dbPathInput
+          Layout.fillWidth: true
+          title: qsTr("Ubicación (dejar vacío para ruta predeterminada)")
+          placeholderText: qsTr("Ej: E:/MisDocumentos/")
+          enabled: !root.databaseReady
+        }
+
+        MMButton {
+          text: qsTr("Examinar…")
+          size: MMButton.Sizes.Small
+          type: MMButton.Types.Secondary
+          enabled: !root.databaseReady
+          onClicked: folderDialog.open()
+        }
       }
 
-      // Notificación de error (visible cuando errorMessage no está vacío)
+      // Notificación de error
       MMNotificationBox {
         Layout.fillWidth: true
         visible: root.errorMessage !== ""
         type: MMNotificationBox.Types.Error
         title: qsTr("Error")
         description: root.errorMessage
+      }
+
+      // Notificación de éxito + botón Exportar (visible tras creación exitosa)
+      ColumnLayout {
+        Layout.fillWidth: true
+        spacing: __style.spacing12
+        visible: root.databaseReady
+
+        MMNotificationBox {
+          Layout.fillWidth: true
+          type: MMNotificationBox.Types.Success
+          title: qsTr("¡Base de datos creada!")
+          description: root.createdDbPath
+        }
+
+        MMButton {
+          text: qsTr("Exportar BD…")
+          Layout.fillWidth: true
+          enabled: root.createdDbPath !== ""
+          onClicked: exportFileDialog.open()
+        }
       }
 
       Item { implicitHeight: __style.spacing20 }
@@ -83,18 +149,17 @@ MMPage {
         MMButton {
           text: qsTr("Crear")
           Layout.fillWidth: true
+          visible: !root.databaseReady
           onClicked: {
-            if (dbNameInput.text.trim() === "") {
-              // Validación básica: emitir con nombre vacío para que el Controller lo maneje
-              root.createDatabaseRequested("", dbPathInput.text.trim())
-            } else {
-              root.createDatabaseRequested(dbNameInput.text.trim(), dbPathInput.text.trim())
-            }
+            root.createDatabaseRequested(
+              dbNameInput.text.trim(),
+              dbPathInput.text.trim()
+            )
           }
         }
 
         MMButton {
-          text: qsTr("Cancelar")
+          text: root.databaseReady ? qsTr("Cerrar") : qsTr("Cancelar")
           type: MMButton.Types.Secondary
           Layout.fillWidth: true
           onClicked: root.backClicked()

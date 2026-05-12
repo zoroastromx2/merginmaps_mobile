@@ -550,3 +550,54 @@ bool DBManager::createTable(const QString &tableName, const QVariantList &fields
 
     return true;
 }
+
+/**
+ * Copia el archivo .db activo a la ruta de destino elegida por el usuario.
+ * Soporta URIs file:// y file:/// (Windows/Android) y rutas POSIX directas.
+ */
+bool DBManager::copyDatabaseTo(const QString &destinationPath)
+{
+    if (m_databasePath.isEmpty()) {
+        setError("No hay base de datos activa para exportar");
+        return false;
+    }
+
+    // Normalizar URI → ruta del sistema de archivos
+    QString destPath = destinationPath;
+    if (destPath.startsWith("file:///")) {
+        destPath = destPath.mid(8);   // Windows: file:///C:/... → C:/...
+    } else if (destPath.startsWith("file://")) {
+        destPath = destPath.mid(7);   // Android/Linux: file:///storage/... → /storage/...
+    }
+
+    // Eliminar archivo destino si ya existe
+    if (QFile::exists(destPath)) {
+        if (!QFile::remove(destPath)) {
+            setError(QString("No se pudo reemplazar el archivo existente: %1").arg(destPath));
+            return false;
+        }
+    }
+
+    // Cerrar la BD temporalmente para garantizar copia limpia (flush de WAL)
+    bool wasOpen = m_database.isOpen();
+    if (wasOpen) {
+        m_database.close();
+    }
+
+    bool success = QFile::copy(m_databasePath, destPath);
+
+    // Reabrir la BD
+    if (wasOpen) {
+        m_database.open();
+        loadTableList();
+    }
+
+    if (!success) {
+        setError(QString("Error al copiar la base de datos a: %1").arg(destPath));
+        return false;
+    }
+
+    qDebug() << "Database exported to:" << destPath;
+    emit databaseCreated(destPath);
+    return true;
+}
