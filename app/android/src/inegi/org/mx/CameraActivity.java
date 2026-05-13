@@ -7,7 +7,7 @@
  *                                                                         *
  ***************************************************************************/
 
-package inegi.org.mx;
+package mx.org.inegi;
 
 import java.text.SimpleDateFormat;
 import java.io.File;
@@ -34,8 +34,8 @@ import androidx.core.content.FileProvider;
 import android.hardware.SensorManager;
 import android.hardware.camera2.CameraManager;
 
-import inegi.org.mx.EXIFUtils;
-import inegi.org.mx.OrientationSensor;
+import mx.org.inegi.EXIFUtils;
+import mx.org.inegi.OrientationSensor;
 
 public class CameraActivity extends Activity {
     private static final String TAG = "Camera Activity";
@@ -73,7 +73,7 @@ public class CameraActivity extends Activity {
             // Continue only if the File was successfully created
             if (photoFile != null) {
                 Uri photoURI = FileProvider.getUriForFile(this,
-                        "inegi.org.mx.fileprovider",
+                        "mx.org.inegi.fileprovider",
                         photoFile);
 
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);

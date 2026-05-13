@@ -202,8 +202,8 @@ void AndroidTrackingBackend::setupForegroundUpdates()
   auto activity = QJniObject( QNativeInterface::QAndroidApplication::context() );
   QAndroidIntent serviceIntent( activity.object(), "inegi/org/mx/PositionTrackingService" );
 
-  serviceIntent.putExtra( QStringLiteral( "inegi.org.mx.tracking.distanceInterval" ), mDistanceFilter );
-  serviceIntent.putExtra( QStringLiteral( "inegi.org.mx.tracking.timeInterval" ), mUpdateInterval );
+  serviceIntent.putExtra( QStringLiteral( "mx.org.inegi.tracking.distanceInterval" ), mDistanceFilter );
+  serviceIntent.putExtra( QStringLiteral( "mx.org.inegi.tracking.timeInterval" ), mUpdateInterval );
 
   QJniObject result = activity.callObjectMethod(
                         "startService",

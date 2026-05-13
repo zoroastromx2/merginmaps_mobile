@@ -11,7 +11,7 @@ set(MM_VERSION_PATCH "2")
 
 set(APPLICATION_NAME "MDM móvil")
 set(ORGANIZATION_NAME "INEGI")
-set(ORGANIZATION_DOMAIN "inegi.org.mx")
+set(ORGANIZATION_DOMAIN "mx.org.inegi")
 
 ##project(MerginMaps LANGUAGES CXX C)
 

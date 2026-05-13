@@ -108,7 +108,7 @@ QString AndroidUtils::readExif( const QString &filePath, const QString &tag )
 #ifdef ANDROID
   const QJniObject jFilePath = QJniObject::fromString( filePath );
   const QJniObject jTag = QJniObject::fromString( tag );
-  const QJniObject attribute = QJniObject::callStaticObjectMethod( "inegi.org.mx.EXIFUtils",
+  const QJniObject attribute = QJniObject::callStaticObjectMethod( "mx.org.inegi.EXIFUtils",
                                "getEXIFAttribute",
                                "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
                                jFilePath.object<jstring>(),
@@ -347,11 +347,11 @@ void AndroidUtils::callCamera( const QString &targetPath, const QString &code )
   // it is not a mandatory permission, so continue even if it is rejected
   requestMediaLocationPermission();
 
-  const QJniObject activity = QJniObject::fromString( QStringLiteral( "inegi.org.mx.CameraActivity" ) );
+  const QJniObject activity = QJniObject::fromString( QStringLiteral( "mx.org.inegi.CameraActivity" ) );
   const QJniObject intent = QJniObject( "android/content/Intent", "(Ljava/lang/String;)V", activity.object<jstring>() );
 
-  const QJniObject packageName = QJniObject::fromString( QStringLiteral( "inegi.org.mx" ) );
-  const QJniObject className = QJniObject::fromString( QStringLiteral( "inegi.org.mx.CameraActivity" ) );
+  const QJniObject packageName = QJniObject::fromString( QStringLiteral( "mx.org.inegi" ) );
+  const QJniObject className = QJniObject::fromString( QStringLiteral( "mx.org.inegi.CameraActivity" ) );
 
   intent.callObjectMethod( "setClassName", "(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;", packageName.object<jstring>(), className.object<jstring>() );
 

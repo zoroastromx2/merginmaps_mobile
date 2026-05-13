@@ -7,7 +7,7 @@
  *                                                                         *
  ***************************************************************************/
 
-package inegi.org.mx;
+package mx.org.inegi;
 
 import android.os.Bundle;
 import androidx.exifinterface.media.ExifInterface;

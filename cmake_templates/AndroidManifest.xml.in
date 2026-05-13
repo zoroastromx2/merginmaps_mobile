@@ -42,7 +42,7 @@
         android:icon="@mipmap/ic_appicon"
         android:roundIcon="@mipmap/ic_appicon_round" >
         <activity
-            android:name="inegi.org.mx.MMActivity"
+            android:name="mx.org.inegi.MMActivity"
             android:configChanges="orientation|uiMode|screenLayout|screenSize|smallestScreenSize|layoutDirection|locale|fontScale|keyboard|keyboardHidden|navigation|mcc|mnc|density"
             android:launchMode="singleTop"
             android:screenOrientation="unspecified"
@@ -96,9 +96,9 @@
 
         <!-- Activity Android native camera -->
         <activity
-            android:name="inegi.org.mx.CameraActivity"
+            android:name="mx.org.inegi.CameraActivity"
             android:label="MDM movil"
-            android:parentActivityName="inegi.org.mx.MMActivity"
+            android:parentActivityName="mx.org.inegi.MMActivity"
             android:configChanges="screenLayout|orientation|screenSize"
             >
              <meta-data android:name="android.app.lib_name" android:value="-- %%INSERT_APP_LIB_NAME%% --" />
@@ -106,7 +106,7 @@
 
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="inegi.org.mx.fileprovider"
+            android:authorities="mx.org.inegi.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true"
             >

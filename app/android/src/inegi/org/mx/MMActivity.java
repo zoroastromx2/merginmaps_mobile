@@ -7,7 +7,7 @@
  *                                                                         *
  ***************************************************************************/
 
-package inegi.org.mx;
+package mx.org.inegi;
 
 import org.qtproject.qt.android.bindings.QtActivity;
 
@@ -587,7 +587,7 @@ public String importQgzFile( Uri qgzUri, String cacheDir ) {
 
     try 
     {
-      Uri fileUri = FileProvider.getUriForFile( this, "inegi.org.mx.fileprovider", file );
+      Uri fileUri = FileProvider.getUriForFile( this, "mx.org.inegi.fileprovider", file );
 
       showFileIntent.setData( fileUri );
 

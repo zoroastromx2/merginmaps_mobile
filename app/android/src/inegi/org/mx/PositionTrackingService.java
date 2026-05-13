@@ -7,7 +7,7 @@
  *                                                                         *
  ***************************************************************************/
 
-package inegi.org.mx;
+package mx.org.inegi;
 
 import android.Manifest;
 import android.os.Build;
@@ -31,7 +31,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Locale;
 
-import inegi.org.mx.PositionTrackingBroadcastMiddleware;
+import mx.org.inegi.PositionTrackingBroadcastMiddleware;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -214,12 +214,12 @@ public class PositionTrackingService extends Service implements LocationListener
             long timeInterval = MIN_TIME_BW_UPDATES;
             long distanceInterval = MIN_DISTANCE_CHANGE_FOR_UPDATES;
 
-            if ( intent.hasExtra( "inegi.org.mx.tracking.timeInterval" ) ) {
-                timeInterval = (long) intent.getDoubleExtra( "inegi.org.mx.tracking.timeInterval", 1000 );
+            if ( intent.hasExtra( "mx.org.inegi.tracking.timeInterval" ) ) {
+                timeInterval = (long) intent.getDoubleExtra( "mx.org.inegi.tracking.timeInterval", 1000 );
             }
 
-            if ( intent.hasExtra( "inegi.org.mx.tracking.distanceInterval" ) ) {
-                distanceInterval = (long) intent.getDoubleExtra( "inegi.org.mx.tracking.distanceInterval", 1 );
+            if ( intent.hasExtra( "mx.org.inegi.tracking.distanceInterval" ) ) {
+                distanceInterval = (long) intent.getDoubleExtra( "mx.org.inegi.tracking.distanceInterval", 1 );
             }
 
             locationManager.requestLocationUpdates(

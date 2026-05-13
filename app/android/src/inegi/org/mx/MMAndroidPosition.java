@@ -1,4 +1,4 @@
-package inegi.org.mx;
+package mx.org.inegi;
 
 import android.Manifest;
 import android.content.Context;

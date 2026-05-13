@@ -97,7 +97,7 @@ void AndroidTrackingBroadcast::sendAliveRequestAsyncPrivate()
   auto activity = QJniObject( QNativeInterface::QAndroidApplication::context() );
   QAndroidIntent serviceIntent( activity.object(), "inegi/org/mx/PositionTrackingService" );
 
-  serviceIntent.putExtra( QStringLiteral( "inegi.org.mx.tracking.alive" ), true );
+  serviceIntent.putExtra( QStringLiteral( "mx.org.inegi.tracking.alive" ), true );
 
   QJniObject result = activity.callObjectMethod(
                         "startService",
