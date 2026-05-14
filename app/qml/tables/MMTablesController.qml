@@ -63,10 +63,11 @@ Item {
       onFilterRequested:        function(text) { root.dbManager.filterTable(text) }
       onClearFilterRequested:   function() { root.dbManager.clearFilter() }
       onCreateTableRequested:   function() { stackView.push(createTablePageComp, {}, StackView.PushTransition) }
-      onCreateDatabaseRequested: function() { stackView.push(createDatabasePageComp, {}, StackView.PushTransition) }
-      onBackClicked:            function() { root.closed() }
+      onCreateDatabaseRequested:function() { stackView.push(createDatabasePageComp, {}, StackView.PushTransition) }
+      onDatabaseSelected:       function() { stackView.push(createDatabasePageComp, {}, StackView.PushTransition) }
+      onBackClicked:            function() { root.closed() }}
     }
-  }
+
 
   // ── Página: crear / abrir base de datos ──────────────────────────────
   Component {
@@ -84,13 +85,13 @@ Item {
           errorMessage = qsTr("El nombre no puede estar vacío")
           return
         }
-
+        console.log("msj: entrando a la creación de BD")
         var dbPath = path.trim()
         if (dbPath === "") dbPath = "./"
         if (!dbPath.endsWith("/") && !dbPath.endsWith("\\")) dbPath += "/"
 
         var fullPath = dbPath + name.trim() + ".db"
-        console.log("Intentando crear BD en: " + fullPath)
+        console.log("msj: Intentando crear BD en: " + fullPath)
 
         if (root.dbManager && root.dbManager.initializeDatabase(fullPath)) {
           // Marcar como exitosa y guardar ruta — el usuario cierra manualmente
@@ -103,10 +104,10 @@ Item {
 
       onDatabaseSelected: function(name, path) {
         // Construir la ruta completa (name ya viene con extensión .db / .sqlite)
-        var dbPath = path
+        var dbPath = path.trim()
         if (!dbPath.endsWith("/") && !dbPath.endsWith("\\")) dbPath += "/"
         var fullPath = dbPath + name
-        console.log("Abriendo BD existente: " + fullPath)
+        console.log("msj: Abriendo BD existente: " + fullPath)
 
         if (root.dbManager && root.dbManager.initializeDatabase(fullPath)) {
           // Mostrar mensaje de confirmación en la página y volver al gestor

@@ -48,6 +48,7 @@ MMPage {
   signal clearFilterRequested()
   signal createTableRequested()
   signal createDatabaseRequested()
+  signal databaseSelected()
 
   // ── Cabecera ──────────────────────────────────────────────────────────
   pageHeader {

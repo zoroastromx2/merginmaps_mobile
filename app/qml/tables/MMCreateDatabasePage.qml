@@ -319,8 +319,10 @@ MMPage {
                   break
                 }
               }
+              console.log("msj: BD seleccionada: " + resolvedName + ' ruta: ' + path)
               root.databaseSelected(resolvedName, path)
             } else {
+              console.log("msj: BD creada: " + resolvedName + ' ruta: ' + path)
               root.createDatabaseRequested(name, path)
             }
           }
