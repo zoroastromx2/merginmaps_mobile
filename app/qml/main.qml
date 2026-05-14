@@ -800,6 +800,32 @@ ApplicationWindow {
   }
 
   Component {
+      id: databaseSelectedPageComponent
+
+      MMCreateDatabasePage {
+          onBackClicked: {
+              mapPanelsStackView.clear(StackView.PopTransition)
+              stateManager.state = "map"
+          }
+
+          onDatabaseSelected: function(name, path) {
+            console.log("msj: DatabaseSelected")
+             /* if (name.trim() === "") return
+
+              var dbPath = path.trim()
+              if (dbPath === "") dbPath = "./"
+              if (!dbPath.endsWith("/") && !dbPath.endsWith("\\")) dbPath += "/"
+
+              var fullPath = dbPath + name.trim() + ".db"
+              if (__dbManager && __dbManager.initializeDatabase(fullPath)) {
+                  mapPanelsStackView.clear(StackView.PopTransition)
+                  stateManager.state = "map"
+              }*/
+          }
+      }
+  }
+
+  Component {
     id: gpsDataDrawerComponent
 
     MMGpsDataDrawer {
