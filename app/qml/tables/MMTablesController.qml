@@ -68,11 +68,17 @@ Item {
     }
   }
 
-  // ── Página: crear base de datos ───────────────────────────────────────
+  // ── Página: crear / abrir base de datos ──────────────────────────────
   Component {
     id: createDatabasePageComp
 
     MMCreateDatabasePage {
+      // Exponer la ruta predeterminada del dbManager si está disponible,
+      // para que el FolderListModel la escanee desde el primer render.
+      defaultPath: root.dbManager && root.dbManager.defaultDatabasePath
+                   ? root.dbManager.defaultDatabasePath
+                   : "./"
+
       onCreateDatabaseRequested: function(name, path) {
         if (name.trim() === "") {
           errorMessage = qsTr("El nombre no puede estar vacío")
@@ -92,6 +98,24 @@ Item {
           createdDbPath = fullPath
         } else {
           errorMessage = qsTr("Error: ") + (root.dbManager ? root.dbManager.getLastError() : qsTr("DBManager no disponible"))
+        }
+      }
+
+      onDatabaseSelected: function(name, path) {
+        // Construir la ruta completa (name ya viene con extensión .db / .sqlite)
+        var dbPath = path
+        if (!dbPath.endsWith("/") && !dbPath.endsWith("\\")) dbPath += "/"
+        var fullPath = dbPath + name
+        console.log("Abriendo BD existente: " + fullPath)
+
+        if (root.dbManager && root.dbManager.initializeDatabase(fullPath)) {
+          // Mostrar mensaje de confirmación en la página y volver al gestor
+          // tras un breve instante para que el usuario lo vea.
+          selectedDbMessage = qsTr("'%1' abierta correctamente. Cargando gestor…").arg(name)
+          openAfterSelectTimer.start()
+        } else {
+          errorMessage = qsTr("Error al abrir BD: ") +
+                         (root.dbManager ? root.dbManager.getLastError() : qsTr("DBManager no disponible"))
         }
       }
 
@@ -132,10 +156,19 @@ Item {
     }
   }
 
-  // ── Timer de cierre automático tras crear BD con éxito ────────────────
+  // ── Timer: cierre automático tras crear BD con éxito ──────────────────
   Timer {
     id: closeAfterSuccessTimer
     interval: 1500
+    onTriggered: stackView.pop(StackView.PopTransition)
+  }
+
+  // ── Timer: volver al gestor después de seleccionar una BD existente ───
+  // Se activa desde onDatabaseSelected; espera 1.2 s para que el usuario
+  // lea el mensaje de confirmación y luego hace pop al gestor.
+  Timer {
+    id: openAfterSelectTimer
+    interval: 1200
     onTriggered: stackView.pop(StackView.PopTransition)
   }
 

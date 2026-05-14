@@ -23,12 +23,16 @@ import "../inputs"
  * Follows the MMPage pattern: view only, no business logic.
  * All communication with the backend is done via signals and properties.
  *
- * New features:
+ * Features:
  *   • FolderListModel scans the active folder for .db / .sqlite files.
+ *   • On load the path field is pre-filled with defaultPath so the scan
+ *     starts immediately against the real default directory.
  *   • A ListView below dbNameInput lets the user pick an existing database.
  *   • The primary action button reads "Seleccionar" when the typed name
  *     matches an existing file, and "Crear" otherwise.
  *   • Signal databaseSelected(name, path) is emitted in "Seleccionar" mode.
+ *   • Property selectedDbMessage shows a success banner after selection;
+ *     the Controller sets it and then pops the page after a short delay.
  */
 
 MMPage {
@@ -38,6 +42,10 @@ MMPage {
   property string errorMessage: ""      // el Controller escribe aquí si falla
   property bool   databaseReady: false  // true cuando la BD fue creada con éxito
   property string createdDbPath: ""     // ruta completa del .db recién creado
+
+  /// Mensaje de confirmación cuando se selecciona una BD existente.
+  /// El Controller escribe aquí el nombre y luego cierra la página.
+  property string selectedDbMessage: ""
 
   // Ruta predeterminada usada cuando dbPathInput está vacío.
   // El Controller (o quien instancie la página) puede sobrescribirla.
@@ -118,7 +126,7 @@ MMPage {
 
   // ── Cabecera ──────────────────────────────────────────────────────────
   pageHeader {
-    title: qsTr("Crear Base de Datos")
+    title: qsTr("Crear / Abrir Base de Datos")
     baseHeaderHeight: __style.row80
     backVisible: true
   }
@@ -138,14 +146,14 @@ MMPage {
         Layout.fillWidth: true
         title: qsTr("Nombre de la Base de Datos")
         placeholderText: qsTr("Ej: miproyecto")
-        enabled: !root.databaseReady
+        enabled: !root.databaseReady && root.selectedDbMessage === ""
       }
 
       // ── Lista de bases de datos existentes ────────────────────────────
       ColumnLayout {
         Layout.fillWidth: true
         spacing: __style.spacing8
-        visible: dbListModel.count > 0 && !root.databaseReady
+        visible: dbListModel.count > 0 && !root.databaseReady && root.selectedDbMessage === ""
 
         MMText {
           text: qsTr("Bases de datos en esta carpeta:")
@@ -229,16 +237,16 @@ MMPage {
         MMTextInput {
           id: dbPathInput
           Layout.fillWidth: true
-          title: qsTr("Ubicación (dejar vacío para ruta predeterminada)")
+          title: qsTr("Ubicación")
           placeholderText: qsTr("Ej: E:/MisDocumentos/")
-          enabled: !root.databaseReady
+          enabled: !root.databaseReady && root.selectedDbMessage === ""
         }
 
         MMButton {
           text: qsTr("Examinar…")
           size: MMButton.Sizes.Small
           type: MMButton.Types.Secondary
-          enabled: !root.databaseReady
+          enabled: !root.databaseReady && root.selectedDbMessage === ""
           onClicked: folderDialog.open()
         }
       }
@@ -252,7 +260,7 @@ MMPage {
         description: root.errorMessage
       }
 
-      // ── Notificación de éxito + botón Exportar ────────────────────────
+      // ── Notificación de éxito: BD creada + botón Exportar ────────────
       ColumnLayout {
         Layout.fillWidth: true
         spacing: __style.spacing12
@@ -273,6 +281,15 @@ MMPage {
         }
       }
 
+      // ── Notificación de éxito: BD seleccionada ────────────────────────
+      MMNotificationBox {
+        Layout.fillWidth: true
+        visible: root.selectedDbMessage !== ""
+        type: MMNotificationBox.Types.Success
+        title: qsTr("Base de datos seleccionada")
+        description: root.selectedDbMessage
+      }
+
       Item { implicitHeight: __style.spacing20 }
 
       // ── Botones de acción ─────────────────────────────────────────────
@@ -284,7 +301,7 @@ MMPage {
         MMButton {
           id: primaryActionBtn
           Layout.fillWidth: true
-          visible: !root.databaseReady
+          visible: !root.databaseReady && root.selectedDbMessage === ""
 
           text: root._nameAlreadyExists ? qsTr("Seleccionar") : qsTr("Crear")
 
@@ -310,7 +327,7 @@ MMPage {
         }
 
         MMButton {
-          text: root.databaseReady ? qsTr("Cerrar") : qsTr("Cancelar")
+          text: (root.databaseReady || root.selectedDbMessage !== "") ? qsTr("Cerrar") : qsTr("Cancelar")
           type: MMButton.Types.Secondary
           Layout.fillWidth: true
           onClicked: root.backClicked()
@@ -321,5 +338,8 @@ MMPage {
 
   Component.onCompleted: {
     console.log("MMCreateDatabasePage cargado")
+    // Pre-fill the path field with defaultPath so FolderListModel scans it
+    // immediately and the user can see existing databases right away.
+    dbPathInput.text = root.defaultPath
   }
 }
