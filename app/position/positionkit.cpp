@@ -118,8 +118,8 @@ void PositionKit::setPositionProvider( AbstractPositionProvider *provider )
 QString PositionKit::positionProviderName() const
 {
   if ( isMockPosition() )
-  {
-    return tr( "External (Mock)" );
+{
+  return tr( "External (Mock)" );
   }
   return mPositionProvider->name();
 }
@@ -449,7 +449,7 @@ double PositionKit::geoidSeparation() const
 QgsPoint PositionKit::positionCoordinate() const
 {
   if ( mPosition.hasValidPosition() )
-    return QgsPoint( mPosition.longitude, mPosition.latitude, mPosition.elevation );
+  return QgsPoint( mPosition.longitude, mPosition.latitude, mPosition.elevation );
 
   return QgsPoint();
 }
@@ -566,8 +566,8 @@ void PositionKit::setAppSettings( AppSettings *appSettings )
 double PositionKit::antennaHeight() const
 {
   if ( mAppSettings )
-  {
-    return mAppSettings->gpsAntennaHeight();
+{
+  return mAppSettings->gpsAntennaHeight();
   }
   else
   {

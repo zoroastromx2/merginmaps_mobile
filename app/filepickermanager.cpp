@@ -31,197 +31,197 @@
 #endif
 
 FilePickerManager::FilePickerManager( QObject *parent )
-    : QObject( parent )
+  : QObject( parent )
 {
 #ifdef ANDROID
-    // Poll for files that arrived via ACTION_VIEW (user tapped a .qgz in an
-    // external file manager) every time the app comes to the foreground.
-    QGuiApplication *guiApp =
-        qobject_cast<QGuiApplication *>( QCoreApplication::instance() );
-    if ( guiApp )
+  // Poll for files that arrived via ACTION_VIEW (user tapped a .qgz in an
+  // external file manager) every time the app comes to the foreground.
+  QGuiApplication *guiApp =
+    qobject_cast<QGuiApplication *>( QCoreApplication::instance() );
+  if ( guiApp )
+  {
+    QObject::connect(
+      guiApp,
+      &QGuiApplication::applicationStateChanged,
+      this,
+      [ this ]( Qt::ApplicationState state )
     {
-        QObject::connect(
-            guiApp,
-            &QGuiApplication::applicationStateChanged,
-            this,
-            [ this ]( Qt::ApplicationState state )
-            {
-                if ( state == Qt::ApplicationActive )
-                {
-                    checkPendingExternalProject();
-                }
-            } );
-    }
+      if ( state == Qt::ApplicationActive )
+      {
+        checkPendingExternalProject();
+      }
+    } );
+  }
 #endif
 }
 
 void FilePickerManager::openFilePicker()
 {
 #ifdef ANDROID
-    // ── Android: launch SAF ACTION_OPEN_DOCUMENT ─────────────────────────────
-    //
-    // We use ACTION_OPEN_DOCUMENT (not ACTION_GET_CONTENT) so that the system
-    // grants us a persistent, re-openable URI with proper Scoped Storage
-    // semantics.  No MANAGE_EXTERNAL_STORAGE permission is needed.
-    //
-    // MIME type: "application/zip"  (.qgz is a renamed zip archive).
-    // We also add "application/octet-stream" as a fallback via EXTRA_MIME_TYPES
-    // so that file managers that mis-identify the type still show the file.
+  // ── Android: launch SAF ACTION_OPEN_DOCUMENT ─────────────────────────────
+  //
+  // We use ACTION_OPEN_DOCUMENT (not ACTION_GET_CONTENT) so that the system
+  // grants us a persistent, re-openable URI with proper Scoped Storage
+  // semantics.  No MANAGE_EXTERNAL_STORAGE permission is needed.
+  //
+  // MIME type: "application/zip"  (.qgz is a renamed zip archive).
+  // We also add "application/octet-stream" as a fallback via EXTRA_MIME_TYPES
+  // so that file managers that mis-identify the type still show the file.
 
-    const QJniObject ACTION_OPEN_DOCUMENT =
-        QJniObject::getStaticObjectField(
-            "android/content/Intent",
-            "ACTION_OPEN_DOCUMENT",
-            "Ljava/lang/String;" );
+  const QJniObject ACTION_OPEN_DOCUMENT =
+    QJniObject::getStaticObjectField(
+      "android/content/Intent",
+      "ACTION_OPEN_DOCUMENT",
+      "Ljava/lang/String;" );
 
-    QJniObject intent(
-        "android/content/Intent",
-        "(Ljava/lang/String;)V",
-        ACTION_OPEN_DOCUMENT.object<jstring>() );
+  QJniObject intent(
+    "android/content/Intent",
+    "(Ljava/lang/String;)V",
+    ACTION_OPEN_DOCUMENT.object<jstring>() );
 
-    if ( !ACTION_OPEN_DOCUMENT.isValid() || !intent.isValid() )
-    {
-        emit notifyError( tr( "Cannot create file picker Intent." ) );
-        return;
-    }
+  if ( !ACTION_OPEN_DOCUMENT.isValid() || !intent.isValid() )
+  {
+    emit notifyError( tr( "Cannot create file picker Intent." ) );
+    return;
+  }
 
-    // Primary MIME type (required by setType)
-    intent = intent.callObjectMethod(
-        "setType",
-        "(Ljava/lang/String;)Landroid/content/Intent;",
-        QJniObject::fromString( "application/zip" ).object<jstring>() );
+  // Primary MIME type (required by setType)
+  intent = intent.callObjectMethod(
+             "setType",
+             "(Ljava/lang/String;)Landroid/content/Intent;",
+             QJniObject::fromString( "application/zip" ).object<jstring>() );
 
-    // Allow additional MIME types so that more file managers expose .qgz files
-    QJniEnvironment env;
-    jobjectArray mimeArray = env->NewObjectArray(
-        3,
-        env->FindClass( "java/lang/String" ),
-        nullptr );
-    env->SetObjectArrayElement( mimeArray, 0, QJniObject::fromString( "application/zip" ).object<jstring>() );
-    env->SetObjectArrayElement( mimeArray, 1, QJniObject::fromString( "application/octet-stream" ).object<jstring>() );
-    env->SetObjectArrayElement( mimeArray, 2, QJniObject::fromString( "*/*" ).object<jstring>() );
+  // Allow additional MIME types so that more file managers expose .qgz files
+  QJniEnvironment env;
+  jobjectArray mimeArray = env->NewObjectArray(
+                             3,
+                             env->FindClass( "java/lang/String" ),
+                             nullptr );
+  env->SetObjectArrayElement( mimeArray, 0, QJniObject::fromString( "application/zip" ).object<jstring>() );
+  env->SetObjectArrayElement( mimeArray, 1, QJniObject::fromString( "application/octet-stream" ).object<jstring>() );
+  env->SetObjectArrayElement( mimeArray, 2, QJniObject::fromString( "*/*" ).object<jstring>() );
 
-    const QJniObject EXTRA_MIME_TYPES =
-        QJniObject::getStaticObjectField(
-            "android/content/Intent",
-            "EXTRA_MIME_TYPES",
-            "Ljava/lang/String;" );
+  const QJniObject EXTRA_MIME_TYPES =
+    QJniObject::getStaticObjectField(
+      "android/content/Intent",
+      "EXTRA_MIME_TYPES",
+      "Ljava/lang/String;" );
 
-    intent.callObjectMethod(
-        "putExtra",
-        "(Ljava/lang/String;[Ljava/lang/String;)Landroid/content/Intent;",
-        EXTRA_MIME_TYPES.object<jstring>(),
-        mimeArray );
+  intent.callObjectMethod(
+    "putExtra",
+    "(Ljava/lang/String;[Ljava/lang/String;)Landroid/content/Intent;",
+    EXTRA_MIME_TYPES.object<jstring>(),
+    mimeArray );
 
-    env->DeleteLocalRef( mimeArray );
+  env->DeleteLocalRef( mimeArray );
 
-    // Only local files (avoids Drive/cloud URIs that can't be accessed offline)
-    intent = intent.callObjectMethod(
-        "putExtra",
-        "(Ljava/lang/String;Z)Landroid/content/Intent;",
-        QJniObject::fromString( "EXTRA_LOCAL_ONLY" ).object<jstring>(),
-        true );
+  // Only local files (avoids Drive/cloud URIs that can't be accessed offline)
+  intent = intent.callObjectMethod(
+             "putExtra",
+             "(Ljava/lang/String;Z)Landroid/content/Intent;",
+             QJniObject::fromString( "EXTRA_LOCAL_ONLY" ).object<jstring>(),
+             true );
 
-    QtAndroidPrivate::startActivity( intent.object<jobject>(), QGZ_PICKER_CODE, this );
+  QtAndroidPrivate::startActivity( intent.object<jobject>(), QGZ_PICKER_CODE, this );
 
 // ── Desktop (Windows, Linux, macOS) ──────────────────────────────────────────
 #else
-    const QString path = QFileDialog::getOpenFileName(
-        nullptr,
-        tr( "Selecciona el proyecto QGIS" ),
-        QString(),               // start dir – OS remembers last one
-        tr( "Proyectos QGIS (*.qgz);;Todos los archivos (*)" ) );
+  const QString path = QFileDialog::getOpenFileName(
+                         nullptr,
+                         tr( "Selecciona el proyecto QGIS" ),
+                         QString(),               // start dir – OS remembers last one
+                         tr( "Proyectos QGIS (*.qgz);;Todos los archivos (*)" ) );
 
-    if ( path.isEmpty() )
-    {
-        emit filePickerCancelled();
-    }
-    else
-    {
-        // QFileDialog already returns an absolute native path – pass it directly.
-        emit fileSelected( path );
-    }
+  if ( path.isEmpty() )
+  {
+    emit filePickerCancelled();
+  }
+  else
+  {
+    // QFileDialog already returns an absolute native path – pass it directly.
+    emit fileSelected( path );
+  }
 #endif
 }
 
 // ── Android callback ─────────────────────────────────────────────────────────
 #ifdef ANDROID
 void FilePickerManager::handleActivityResult( const int receiverRequestCode,
-                                             const int resultCode,
-                                             const QJniObject &data )
+    const int resultCode,
+    const QJniObject &data )
 {
-    if ( receiverRequestCode != QGZ_PICKER_CODE )
-        return;
+  if ( receiverRequestCode != QGZ_PICKER_CODE )
+    return;
 
-    const jint RESULT_OK =
-        QJniObject::getStaticField<jint>( "android/app/Activity", "RESULT_OK" );
+  const jint RESULT_OK =
+    QJniObject::getStaticField<jint>( "android/app/Activity", "RESULT_OK" );
 
-    if ( resultCode != RESULT_OK )
-    {
-        // User pressed Back / cancelled
-        emit filePickerCancelled();
-        return;
-    }
+  if ( resultCode != RESULT_OK )
+  {
+    // User pressed Back / cancelled
+    emit filePickerCancelled();
+    return;
+  }
 
-    if ( !data.isValid() )
-    {
-        emit notifyError( tr( "File picker returned no data." ) );
-        return;
-    }
+  if ( !data.isValid() )
+  {
+    emit notifyError( tr( "File picker returned no data." ) );
+    return;
+  }
 
-    // Retrieve the content:// URI from the Intent
-    const QJniObject uri =
-        data.callObjectMethod( "getData", "()Landroid/net/Uri;" );
+  // Retrieve the content:// URI from the Intent
+  const QJniObject uri =
+    data.callObjectMethod( "getData", "()Landroid/net/Uri;" );
 
-    if ( !uri.isValid() )
-    {
-        emit notifyError( tr( "Invalid URI returned by file picker." ) );
-        return;
-    }
+  if ( !uri.isValid() )
+  {
+    emit notifyError( tr( "Invalid URI returned by file picker." ) );
+    return;
+  }
 
-    // Delegate the content:// → local-file copy to the Java Activity.
-    // importQgzFile() creates a copy inside the app's cache dir and returns
-    // the absolute path string.  QGIS / GDAL can open that path directly.
-    const QJniObject activity =
-        QJniObject( QNativeInterface::QAndroidApplication::context() );
+  // Delegate the content:// → local-file copy to the Java Activity.
+  // importQgzFile() creates a copy inside the app's cache dir and returns
+  // the absolute path string.  QGIS / GDAL can open that path directly.
+  const QJniObject activity =
+    QJniObject( QNativeInterface::QAndroidApplication::context() );
 
-    const QString externalProjectsDir =
-        activity.callObjectMethod(
-                    "getExternalProjectsDir",
-                    "()Ljava/lang/String;" )
-            .toString();
+  const QString externalProjectsDir =
+    activity.callObjectMethod(
+      "getExternalProjectsDir",
+      "()Ljava/lang/String;" )
+    .toString();
 
-    const QString localPath =
-        activity.callObjectMethod(
-                    "importQgzFile",
-                    "(Landroid/net/Uri;Ljava/lang/String;)Ljava/lang/String;",
-                    uri.object(),
-                    QJniObject::fromString( externalProjectsDir ).object<jstring>() )
-            .toString();
+  const QString localPath =
+    activity.callObjectMethod(
+      "importQgzFile",
+      "(Landroid/net/Uri;Ljava/lang/String;)Ljava/lang/String;",
+      uri.object(),
+      QJniObject::fromString( externalProjectsDir ).object<jstring>() )
+    .toString();
 
-    if ( localPath.isEmpty() )
-    {
-        const QString msg = tr( "Could not copy the selected .qgz file to the app cache." );
-        CoreUtils::log( "FilePickerManager", msg );
-        emit notifyError( msg );
-        return;
-    }
+  if ( localPath.isEmpty() )
+  {
+    const QString msg = tr( "Could not copy the selected .qgz file to the app cache." );
+    CoreUtils::log( "FilePickerManager", msg );
+    emit notifyError( msg );
+    return;
+  }
 
-    // Strip the "file://" prefix if the Java side returned a file URI
-    QString posixPath = localPath;
-    if ( posixPath.startsWith( "file://" ) )
-        posixPath = QUrl( posixPath ).toLocalFile();
+  // Strip the "file://" prefix if the Java side returned a file URI
+  QString posixPath = localPath;
+  if ( posixPath.startsWith( "file://" ) )
+    posixPath = QUrl( posixPath ).toLocalFile();
 
-    CoreUtils::log( "FilePickerManager", "QGZ imported to: " + posixPath );
+  CoreUtils::log( "FilePickerManager", "QGZ imported to: " + posixPath );
 
-    // Copy all sibling layer files (e.g. BD.gpkg) that the project may reference
-    activity.callMethod<void>(
-        "copySiblingFiles",
-        "(Landroid/net/Uri;Ljava/lang/String;)V",
-        uri.object(),
-        QJniObject::fromString( externalProjectsDir ).object<jstring>() );
+  // Copy all sibling layer files (e.g. BD.gpkg) that the project may reference
+  activity.callMethod<void>(
+    "copySiblingFiles",
+    "(Landroid/net/Uri;Ljava/lang/String;)V",
+    uri.object(),
+    QJniObject::fromString( externalProjectsDir ).object<jstring>() );
 
-    emit fileSelected( posixPath );
+  emit fileSelected( posixPath );
 }
 #endif
 
@@ -229,20 +229,20 @@ void FilePickerManager::handleActivityResult( const int receiverRequestCode,
 #ifdef ANDROID
 void FilePickerManager::checkPendingExternalProject()
 {
-    // Ask the Java Activity whether a .qgz was opened externally.
-    // getAndConsumeExternalProjectPath() returns "" if nothing is pending.
-    const QString path =
-        QJniObject::callStaticObjectMethod(
-            "inegi/org/mx/MMActivity",
-            "getAndConsumeExternalProjectPath",
-            "()Ljava/lang/String;" )
-        .toString();
+  // Ask the Java Activity whether a .qgz was opened externally.
+  // getAndConsumeExternalProjectPath() returns "" if nothing is pending.
+  const QString path =
+    QJniObject::callStaticObjectMethod(
+      "inegi/org/mx/MMActivity",
+      "getAndConsumeExternalProjectPath",
+      "()Ljava/lang/String;" )
+    .toString();
 
-    if ( path.isEmpty() )
-        return;
+  if ( path.isEmpty() )
+    return;
 
-    CoreUtils::log( "FilePickerManager",
-                    "External project received via ACTION_VIEW: " + path );
-    emit externalProjectOpened( path );
+  CoreUtils::log( "FilePickerManager",
+                  "External project received via ACTION_VIEW: " + path );
+  emit externalProjectOpened( path );
 }
 #endif

@@ -93,8 +93,8 @@ void ValueRelationFeaturesModel::reset()
 QVariant ValueRelationFeaturesModel::featureTitle( const FeatureLayerPair &pair ) const
 {
   if ( !mTitleField.isEmpty() )
-  {
-    return pair.feature().attribute( mTitleField );
+{
+  return pair.feature().attribute( mTitleField );
   }
 
   return LayerFeaturesModel::featureTitle( pair );

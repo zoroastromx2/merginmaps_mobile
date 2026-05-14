@@ -632,17 +632,24 @@ qt_add_qml_module(
   URI MMInput
   VERSION 1.0
   QML_FILES ${MM_QML_SRCS}
-  RESOURCE_PREFIX /com.merginmaps/imports
-  SOURCES dbmanager.h
-  SOURCES dbmanager.cpp
-  SOURCES dbmanager.cpp
-  SOURCES filepickermanager.h
-  SOURCES filepickermanager.h
-  SOURCES filepickermanager.h
-  SOURCES filepickermanager.cpp
-  #QML_FILES qml/project/MMImportProjectPage.qml
-  #QML_FILES qml/tables/CreateTableForm.qml
-  #QML_FILES qml/tables/DatabaseManagerWindow.qml
-  #QML_FILES qml/tables/CreateTableDialog.qml
-  #QML_FILES qml/tables/CreateDataBasePanel.qml
+  RESOURCE_PREFIX
+    /com.merginmaps/imports
+    SOURCES
+    dbmanager.h
+    SOURCES
+    dbmanager.cpp
+    SOURCES
+    dbmanager.cpp
+    SOURCES
+    filepickermanager.h
+    SOURCES
+    filepickermanager.h
+    SOURCES
+    filepickermanager.h
+    SOURCES
+    filepickermanager.cpp
+    # QML_FILES qml/project/MMImportProjectPage.qml QML_FILES
+    # qml/tables/CreateTableForm.qml QML_FILES qml/tables/DatabaseManagerWindow.qml
+    # QML_FILES qml/tables/CreateTableDialog.qml QML_FILES
+    # qml/tables/CreateDataBasePanel.qml
 )

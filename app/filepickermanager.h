@@ -40,12 +40,12 @@
  */
 class FilePickerManager : public QObject
 #ifdef ANDROID
-    , QAndroidActivityResultReceiver
+  , QAndroidActivityResultReceiver
 #endif
 {
     Q_OBJECT
 
-public:
+  public:
     explicit FilePickerManager( QObject *parent = nullptr );
 
     /// Request code used when starting the Android picker Activity
@@ -64,8 +64,8 @@ public:
 
 #ifdef ANDROID
     void handleActivityResult( int receiverRequestCode,
-                              int resultCode,
-                              const QJniObject &data ) override;
+                               int resultCode,
+                               const QJniObject &data ) override;
 
     /**
      * Queries the Java Activity for a .qgz path that was received via
@@ -78,7 +78,7 @@ public:
     void checkPendingExternalProject();
 #endif
 
-signals:
+  signals:
     /// Emitted with a valid POSIX path (no "file://" prefix) when a .qgz
     /// file has been successfully selected and – on Android – copied to cache.
     void fileSelected( const QString &filePath );

@@ -25,20 +25,21 @@
  * __dbManager.submitChanges()
  * @endcode
  */
-class DBManager : public QObject {
+class DBManager : public QObject
+{
     Q_OBJECT
-    Q_PROPERTY(QStringList tableList READ getTableList NOTIFY tableListChanged)
-    Q_PROPERTY(QString currentTable READ getCurrentTable WRITE setCurrentTable NOTIFY currentTableChanged)
-    Q_PROPERTY(QSqlTableModel* tableModel READ getTableModel NOTIFY tableModelChanged)
-    Q_PROPERTY(QString lastError READ getLastError NOTIFY errorOccurred)
-    Q_PROPERTY(bool isConnected READ isConnected NOTIFY connectionStatusChanged)
-    Q_PROPERTY(QString databaseName READ getDatabaseName NOTIFY databaseNameChanged)
-    Q_PROPERTY(QString databasePath READ getDatabasePath NOTIFY databasePathChanged)
-    Q_PROPERTY(int rowCount READ getRowCount NOTIFY rowCountChanged)
+    Q_PROPERTY( QStringList tableList READ getTableList NOTIFY tableListChanged )
+    Q_PROPERTY( QString currentTable READ getCurrentTable WRITE setCurrentTable NOTIFY currentTableChanged )
+    Q_PROPERTY( QSqlTableModel* tableModel READ getTableModel NOTIFY tableModelChanged )
+    Q_PROPERTY( QString lastError READ getLastError NOTIFY errorOccurred )
+    Q_PROPERTY( bool isConnected READ isConnected NOTIFY connectionStatusChanged )
+    Q_PROPERTY( QString databaseName READ getDatabaseName NOTIFY databaseNameChanged )
+    Q_PROPERTY( QString databasePath READ getDatabasePath NOTIFY databasePathChanged )
+    Q_PROPERTY( int rowCount READ getRowCount NOTIFY rowCountChanged )
 
 
-public:
-    explicit DBManager(QObject *parent = nullptr);
+  public:
+    explicit DBManager( QObject *parent = nullptr );
     ~DBManager();
 
     // ============== INICIALIZACIÓN ==============
@@ -47,7 +48,7 @@ public:
      * @param dbPath Ruta completa al archivo de BD
      * @return true si la inicialización fue exitosa
      */
-    Q_INVOKABLE bool initializeDatabase(const QString &dbPath);
+    Q_INVOKABLE bool initializeDatabase( const QString &dbPath );
 
     /**
      * Cierra la conexión actual con la BD
@@ -58,7 +59,7 @@ public:
     // ============== GETTERS ==============
     QStringList getTableList() const { return m_tableList; }
     QString getCurrentTable() const { return m_currentTable; }
-    QSqlTableModel* getTableModel() const { return m_tableModel.get(); }
+    QSqlTableModel *getTableModel() const { return m_tableModel.get(); }
     QString getLastError() const { return m_lastError; }
     bool isConnected() const { return m_database.isOpen(); }
     QString getDatabasePath() const;
@@ -68,7 +69,7 @@ public:
      * Establece la tabla actual y carga sus datos
      * @param tableName Nombre de la tabla a cargar
      */
-    Q_INVOKABLE void setCurrentTable(const QString &tableName);
+    Q_INVOKABLE void setCurrentTable( const QString &tableName );
 
     // ============== OPERACIONES CRUD ==============
     /**
@@ -82,7 +83,7 @@ public:
      * @param row Índice de la fila a eliminar
      * @return true si se eliminó correctamente
      */
-    Q_INVOKABLE bool removeRow(int row);
+    Q_INVOKABLE bool removeRow( int row );
 
     /**
      * Confirma todos los cambios pendientes en la BD
@@ -102,7 +103,7 @@ public:
      * @param tableName Nombre de la tabla
      * @return Lista de nombres de columnas
      */
-    Q_INVOKABLE QStringList getColumnNames(const QString &tableName) const;
+    Q_INVOKABLE QStringList getColumnNames( const QString &tableName ) const;
 
     /**
      * Obtiene el número total de filas en la tabla actual
@@ -121,7 +122,7 @@ public:
      * Filtra la tabla usando una expresión WHERE SQL
      * @param filterExpression Expresión de filtro (ej: "edad > 18")
      */
-    Q_INVOKABLE void filterTable(const QString &filterExpression);
+    Q_INVOKABLE void filterTable( const QString &filterExpression );
 
     /**
      * Limpia todos los filtros aplicados
@@ -134,7 +135,7 @@ public:
      * @param filePath Ruta del archivo de destino
      * @return true si la exportación fue exitosa
      */
-    Q_INVOKABLE bool exportToCSV(const QString &filePath);
+    Q_INVOKABLE bool exportToCSV( const QString &filePath );
 
     /**
      * Copia el archivo de BD activo a una ruta de destino elegida por el usuario.
@@ -142,7 +143,7 @@ public:
      * @param destinationPath Ruta o URI completa de destino (incluyendo nombre de archivo).
      * @return true si la copia fue exitosa.
      */
-    Q_INVOKABLE bool copyDatabaseTo(const QString &destinationPath);
+    Q_INVOKABLE bool copyDatabaseTo( const QString &destinationPath );
 
     // ============== INFORMACIÓN ==============
     /*
@@ -162,7 +163,7 @@ public:
     * @param tableName Nombre de la tabla
     * @return true si existe
     */
-    Q_INVOKABLE bool tableExists(const QString &tableName) const;
+    Q_INVOKABLE bool tableExists( const QString &tableName ) const;
 
     /*
     * Crea una nueva tabla con los campos especificados
@@ -170,9 +171,9 @@ public:
     * @param fields Lista de campos {name, type}
     * @return true si se creó correctamente
     */
-    Q_INVOKABLE bool createTable(const QString &tableName, const QVariantList &fields);
+    Q_INVOKABLE bool createTable( const QString &tableName, const QVariantList &fields );
 
-signals:
+  signals:
     // Señales de cambios en tabla
     void tableListChanged();
     void currentTableChanged();
@@ -183,13 +184,13 @@ signals:
     void databasePathChanged();
 
     // Señales de notificación
-    void errorOccurred(const QString &errorMessage);
-    void tableCreated(const QString &tableName);
-    void databaseCreated(const QString &databasePath);
-    void connectionStatusChanged(bool connected);
+    void errorOccurred( const QString &errorMessage );
+    void tableCreated( const QString &tableName );
+    void databaseCreated( const QString &databasePath );
+    void connectionStatusChanged( bool connected );
     void dataChanged();
 
-private:
+  private:
     // ============== MÉTODOS PRIVADOS ==============
     /**
      * Carga la lista de todas las tablas de la BD
@@ -207,13 +208,13 @@ private:
      * @param tableName Nombre de la tabla
      * @return true si la tabla existe
      */
-    bool isValidTableName(const QString &tableName) const;
+    bool isValidTableName( const QString &tableName ) const;
 
     /**
      * Establece el último error y emite la señal
      * @param errorMessage Mensaje de error
      */
-    void setError(const QString &errorMessage);
+    void setError( const QString &errorMessage );
 
     // ============== MIEMBROS ==============
     QSqlDatabase m_database;

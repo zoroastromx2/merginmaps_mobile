@@ -390,7 +390,7 @@ void ActiveProject::updateMapSettingsLayers() const
   QList<QgsMapLayer *> visibleLayers = getVisibleLayers();
   mMapSettings->setLayers( visibleLayers );
   mMapSettings->setTransformContext( mQgsProject->transformContext() );
-}
+  }
 
 InputMapSettings *ActiveProject::mapSettings() const
 {
@@ -400,8 +400,8 @@ InputMapSettings *ActiveProject::mapSettings() const
 AutosyncController *ActiveProject::autosyncController() const
 {
   if ( mAutosyncController )
-  {
-    return mAutosyncController.get();
+{
+  return mAutosyncController.get();
   }
 
   return nullptr;
@@ -528,8 +528,8 @@ bool ActiveProject::isProjectLoaded() const
 void ActiveProject::setActiveLayer( QgsMapLayer *layer ) const
 {
   if ( !layer || !layer->isValid() )
-  {
-    mActiveLayer.resetActiveLayer();
+{
+  mActiveLayer.resetActiveLayer();
   }
   else
   {
@@ -558,17 +558,17 @@ const QString &ActiveProject::mapTheme() const
 bool ActiveProject::positionTrackingSupported() const
 {
   if ( !isProjectLoaded() )
-  {
-    return false;
-  }
+{
+  return false;
+}
 
-  return mQgsProject->readBoolEntry( QStringLiteral( "Mergin" ), QStringLiteral( "PositionTracking/Enabled" ), false );
+return mQgsProject->readBoolEntry( QStringLiteral( "Mergin" ), QStringLiteral( "PositionTracking/Enabled" ), false );
 }
 
 bool ActiveProject::projectHasRecordingLayers() const
 {
   if ( !mQgsProject )
-    return false;
+  return false;
 
   const QMap<QString, QgsMapLayer *> layers = mQgsProject->mapLayers();
   for ( auto it = layers.constBegin(); it != layers.constEnd(); ++it )
@@ -598,20 +598,20 @@ void ActiveProject::setProjectRole( const QString &role )
 bool ActiveProject::recordingAllowed( QgsMapLayer *layer ) const
 {
   if ( !layer )
-    return false;
+  return false;
 
   //there is a bug in QgsMapLayerProxyModel::layerMatchesFilters, but having
   //just Qgis::LayerFilter::WritableLayer should be enough when fixed
   if ( layer->readOnly() )
     return false;
 
-  return QgsMapLayerProxyModel::layerMatchesFilters( layer, Qgis::LayerFilter::HasGeometry | Qgis::LayerFilter::WritableLayer ) && layer->id() != positionTrackingLayerId() && layer->id() != mapSketchesLayerId();
-}
+    return QgsMapLayerProxyModel::layerMatchesFilters( layer, Qgis::LayerFilter::HasGeometry | Qgis::LayerFilter::WritableLayer ) && layer->id() != positionTrackingLayerId() && layer->id() != mapSketchesLayerId();
+  }
 
 QString ActiveProject::positionTrackingLayerId() const
 {
   if ( !mQgsProject )
-    return QString();
+  return QString();
 
   return mQgsProject->readEntry( QStringLiteral( "Mergin" ), QStringLiteral( "PositionTracking/TrackingLayer" ), QString() );
 }
@@ -619,24 +619,24 @@ QString ActiveProject::positionTrackingLayerId() const
 QList<QgsMapLayer *> ActiveProject::getVisibleLayers() const
 {
   if ( !mQgsProject )
-    return QList<QgsMapLayer *>();
+  return QList<QgsMapLayer *>();
 
   QgsLayerTree *root = mQgsProject->layerTreeRoot();
 
   if ( !root )
     return QList<QgsMapLayer *>();
 
-  // Get list of all visible valid layers in the project
-  QList<QgsMapLayer *> visibleLayers;
-  const QList<QgsMapLayer *> layers = root->layerOrder();
+    // Get list of all visible valid layers in the project
+    QList<QgsMapLayer *> visibleLayers;
+    const QList<QgsMapLayer *> layers = root->layerOrder();
 
   for ( QgsMapLayer *layer : layers )
-  {
-    if ( InputUtils::isLayerVisible( layer, mQgsProject ) )
     {
-      visibleLayers << layer;
-    }
-  }
+      if ( InputUtils::isLayerVisible( layer, mQgsProject ) )
+        {
+          visibleLayers << layer;
+        }
+      }
 
   return visibleLayers;
 }
@@ -644,27 +644,27 @@ QList<QgsMapLayer *> ActiveProject::getVisibleLayers() const
 bool ActiveProject::mapSketchesEnabled() const
 {
   if ( !isProjectLoaded() )
-  {
-    return false;
-  }
+{
+  return false;
+}
 
-  return mQgsProject->readBoolEntry( QStringLiteral( "Mergin" ), QStringLiteral( "MapSketching/Enabled" ), false );
+return mQgsProject->readBoolEntry( QStringLiteral( "Mergin" ), QStringLiteral( "MapSketching/Enabled" ), false );
 }
 
 QString ActiveProject::mapSketchesLayerId() const
 {
   if ( !mQgsProject )
-    return {};
+  return {};
 
   return mQgsProject->readEntry( QStringLiteral( "Mergin" ), QStringLiteral( "MapSketching/Layer" ), QString() );
-}
+  }
 
 bool ActiveProject::photoSketchingEnabled() const
 {
   if ( !isProjectLoaded() )
-  {
-    return false;
-  }
+{
+  return false;
+}
 
-  return mQgsProject->readBoolEntry( QStringLiteral( "Mergin" ), QStringLiteral( "PhotoSketching/Enabled" ), false );
+return mQgsProject->readBoolEntry( QStringLiteral( "Mergin" ), QStringLiteral( "PhotoSketching/Enabled" ), false );
 }

@@ -80,7 +80,7 @@ int PositionProvidersModel::rowCount( const QModelIndex & ) const
 QVariant PositionProvidersModel::data( const QModelIndex &index, int role ) const
 {
   if ( !index.isValid() )
-    return QVariant();
+  return QVariant();
 
   int row = index.row();
 
@@ -89,23 +89,23 @@ QVariant PositionProvidersModel::data( const QModelIndex &index, int role ) cons
   if ( row < 0 || row > mProviders.count() )
     return QVariant();
 
-  switch ( role )
-  {
-    case DataRoles::ProviderName:
-      return provider.name;
+    switch ( role )
+    {
+      case DataRoles::ProviderName:
+        return provider.name;
 
-    case DataRoles::ProviderDescription:
-      return provider.description;
+      case DataRoles::ProviderDescription:
+        return provider.description;
 
-    case DataRoles::ProviderId:
-      return provider.providerId;
+      case DataRoles::ProviderId:
+        return provider.providerId;
 
-    case DataRoles::ProviderType:
-      return provider.providerType;
+      case DataRoles::ProviderType:
+        return provider.providerType;
 
-    default:
-      return QVariant();
-  }
+      default:
+        return QVariant();
+      }
 }
 
 void PositionProvidersModel::removeProvider( const QString &providerId )

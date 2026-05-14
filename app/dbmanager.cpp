@@ -10,57 +10,59 @@
 #include <QVariant>
 #include <QFileInfo>      // 2026
 
-DBManager::DBManager(QObject *parent)
-    : QObject(parent)
-    , m_lastError("")
-    , m_databasePath("")
+DBManager::DBManager( QObject *parent )
+  : QObject( parent )
+  , m_lastError( "" )
+  , m_databasePath( "" )
 {
-    qDebug() << "DBManager constructor invoked";
+  qDebug() << "DBManager constructor invoked";
 }
 
 DBManager::~DBManager()
 {
-    closeDatabase();
-    qDebug() << "DBManager destructor";
+  closeDatabase();
+  qDebug() << "DBManager destructor";
 }
 
 /**
  * Inicializa la conexión con la base de datos SQLite
  */
-bool DBManager::initializeDatabase(const QString &dbPath)
+bool DBManager::initializeDatabase( const QString &dbPath )
 {
-    qDebug() << "Initializing database:" << dbPath;
+  qDebug() << "Initializing database:" << dbPath;
 
-    // Validar que la ruta no esté vacía
-    if (dbPath.isEmpty()) {
-        setError("Ruta de base de datos vacía");
-        return false;
-    }
+  // Validar que la ruta no esté vacía
+  if ( dbPath.isEmpty() )
+  {
+    setError( "Ruta de base de datos vacía" );
+    return false;
+  }
 
-    // Crear conexión con ID único
-    static int connectionCounter = 0;
-    QString connectionName = QString("DBManager_%1").arg(++connectionCounter);
+  // Crear conexión con ID único
+  static int connectionCounter = 0;
+  QString connectionName = QString( "DBManager_%1" ).arg( ++connectionCounter );
 
-    m_database = QSqlDatabase::addDatabase("QSQLITE", connectionName);
-    m_database.setDatabaseName(dbPath);
-    m_databasePath = dbPath;
+  m_database = QSqlDatabase::addDatabase( "QSQLITE", connectionName );
+  m_database.setDatabaseName( dbPath );
+  m_databasePath = dbPath;
 
-    // Intentar abrir la conexión
-    if (!m_database.open()) {
-        setError(QString("No se pudo abrir BD: %1").arg(m_database.lastError().text()));
-        return false;
-    }
+  // Intentar abrir la conexión
+  if ( !m_database.open() )
+  {
+    setError( QString( "No se pudo abrir BD: %1" ).arg( m_database.lastError().text() ) );
+    return false;
+  }
 
-    qDebug() << "Database opened successfully at:" << dbPath;
+  qDebug() << "Database opened successfully at:" << dbPath;
 
-    // Cargar lista de tablas
-    loadTableList();
+  // Cargar lista de tablas
+  loadTableList();
 
-    // Emitir señal de conexión exitosa
-    emit databaseCreated(dbPath);
-    emit connectionStatusChanged(true);
+  // Emitir señal de conexión exitosa
+  emit databaseCreated( dbPath );
+  emit connectionStatusChanged( true );
 
-    return true;
+  return true;
 }
 
 /**
@@ -68,18 +70,19 @@ bool DBManager::initializeDatabase(const QString &dbPath)
  */
 bool DBManager::closeDatabase()
 {
-    if (m_database.isOpen()) {
-        m_database.close();
-        qDebug() << "Database closed";
-    }
+  if ( m_database.isOpen() )
+  {
+    m_database.close();
+    qDebug() << "Database closed";
+  }
 
-    m_tableList.clear();
-    m_currentTable.clear();
-    m_tableModel.reset();
-    m_databasePath.clear();
+  m_tableList.clear();
+  m_currentTable.clear();
+  m_tableModel.reset();
+  m_databasePath.clear();
 
-    emit connectionStatusChanged(false);
-    return true;
+  emit connectionStatusChanged( false );
+  return true;
 }
 
 /**
@@ -88,67 +91,75 @@ bool DBManager::closeDatabase()
  */
 void DBManager::loadTableList()
 {
-    m_tableList.clear();
+  m_tableList.clear();
 
-    if (!m_database.isOpen()) {
-        setError("Base de datos no está abierta");
-        return;
+  if ( !m_database.isOpen() )
+  {
+    setError( "Base de datos no está abierta" );
+    return;
+  }
+
+  QSqlQuery query( m_database );
+
+  // Ejecutar consulta para obtener todas las tablas
+  if ( !query.exec( "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name" ) )
+  {
+    setError( QString( "Error cargando tablas: %1" ).arg( query.lastError().text() ) );
+    qDebug() << "SQL Error:" << query.lastError().text();
+    return;
+  }
+
+  int tableCount = 0;
+  while ( query.next() )
+  {
+    QString tableName = query.value( 0 ).toString();
+
+    // Filtrar tablas de sistema de SQLite
+    if ( !tableName.startsWith( "sqlite_" ) )
+    {
+      m_tableList.append( tableName );
+      tableCount++;
     }
+  }
 
-    QSqlQuery query(m_database);
-
-    // Ejecutar consulta para obtener todas las tablas
-    if (!query.exec("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")) {
-        setError(QString("Error cargando tablas: %1").arg(query.lastError().text()));
-        qDebug() << "SQL Error:" << query.lastError().text();
-        return;
-    }
-
-    int tableCount = 0;
-    while (query.next()) {
-        QString tableName = query.value(0).toString();
-
-        // Filtrar tablas de sistema de SQLite
-        if (!tableName.startsWith("sqlite_")) {
-            m_tableList.append(tableName);
-            tableCount++;
-        }
-    }
-
-    qDebug() << "Loaded" << tableCount << "tables from database";
-    emit tableListChanged();
+  qDebug() << "Loaded" << tableCount << "tables from database";
+  emit tableListChanged();
 }
 
 /**
  * Establece la tabla actual y carga sus datos
  */
-void DBManager::setCurrentTable(const QString &tableName)
+void DBManager::setCurrentTable( const QString &tableName )
 {
-    qDebug() << "Setting current table:" << tableName;
+  qDebug() << "Setting current table:" << tableName;
 
-    if (!m_database.isOpen()) {
-        setError("Base de datos no está abierta");
-        return;
-    }
+  if ( !m_database.isOpen() )
+  {
+    setError( "Base de datos no está abierta" );
+    return;
+  }
 
-    if (tableName.isEmpty()) {
-        setError("Nombre de tabla vacío");
-        return;
-    }
+  if ( tableName.isEmpty() )
+  {
+    setError( "Nombre de tabla vacío" );
+    return;
+  }
 
-    if (!isValidTableName(tableName)) {
-        setError(QString("Tabla inválida: %1").arg(tableName));
-        return;
-    }
+  if ( !isValidTableName( tableName ) )
+  {
+    setError( QString( "Tabla inválida: %1" ).arg( tableName ) );
+    return;
+  }
 
-    if (m_currentTable == tableName) {
-        return; // Ya es la tabla actual
-    }
+  if ( m_currentTable == tableName )
+  {
+    return; // Ya es la tabla actual
+  }
 
-    m_currentTable = tableName;
-    createTableModel();
+  m_currentTable = tableName;
+  createTableModel();
 
-    emit currentTableChanged();
+  emit currentTableChanged();
 }
 
 /**
@@ -156,26 +167,27 @@ void DBManager::setCurrentTable(const QString &tableName)
  */
 void DBManager::createTableModel()
 {
-    qDebug() << "Creating table model for:" << m_currentTable;
+  qDebug() << "Creating table model for:" << m_currentTable;
 
-    // Crear nuevo modelo
-    m_tableModel.reset(new QSqlTableModel(this, m_database));
-    m_tableModel->setTable(m_currentTable);
+  // Crear nuevo modelo
+  m_tableModel.reset( new QSqlTableModel( this, m_database ) );
+  m_tableModel->setTable( m_currentTable );
 
-    // Configurar estrategia de edición
-    m_tableModel->setEditStrategy(QSqlTableModel::OnManualSubmit);
+  // Configurar estrategia de edición
+  m_tableModel->setEditStrategy( QSqlTableModel::OnManualSubmit );
 
-    // Seleccionar todos los datos
-    if (!m_tableModel->select()) {
-        setError(QString("Error cargando tabla: %1").arg(m_tableModel->lastError().text()));
-        m_tableModel.reset();
-        return;
-    }
+  // Seleccionar todos los datos
+  if ( !m_tableModel->select() )
+  {
+    setError( QString( "Error cargando tabla: %1" ).arg( m_tableModel->lastError().text() ) );
+    m_tableModel.reset();
+    return;
+  }
 
-    qDebug() << "Table model created with" << m_tableModel->rowCount() << "rows";
+  qDebug() << "Table model created with" << m_tableModel->rowCount() << "rows";
 
-    emit tableModelChanged();
-    emit rowCountChanged();
+  emit tableModelChanged();
+  emit rowCountChanged();
 }
 
 /**
@@ -183,50 +195,55 @@ void DBManager::createTableModel()
  */
 bool DBManager::addRow()
 {
-    if (!m_tableModel) {
-        setError("No hay tabla cargada");
-        return false;
-    }
+  if ( !m_tableModel )
+  {
+    setError( "No hay tabla cargada" );
+    return false;
+  }
 
-    int newRow = m_tableModel->rowCount();
+  int newRow = m_tableModel->rowCount();
 
-    if (!m_tableModel->insertRow(newRow)) {
-        setError(QString("Error insertando fila: %1").arg(m_tableModel->lastError().text()));
-        return false;
-    }
+  if ( !m_tableModel->insertRow( newRow ) )
+  {
+    setError( QString( "Error insertando fila: %1" ).arg( m_tableModel->lastError().text() ) );
+    return false;
+  }
 
-    qDebug() << "New row added at index:" << newRow;
+  qDebug() << "New row added at index:" << newRow;
 
-    emit rowCountChanged();
-    emit dataChanged();
-    return true;
+  emit rowCountChanged();
+  emit dataChanged();
+  return true;
 }
 
 /**
  * Elimina una fila específica
  */
-bool DBManager::removeRow(int row)
+bool DBManager::removeRow( int row )
 {
-    if (!m_tableModel) {
-        setError("No hay tabla cargada");
-        return false;
-    }
+  if ( !m_tableModel )
+  {
+    setError( "No hay tabla cargada" );
+    return false;
+  }
 
-    if (row < 0 || row >= m_tableModel->rowCount()) {
-        setError(QString("Índice de fila inválido: %1").arg(row));
-        return false;
-    }
+  if ( row < 0 || row >= m_tableModel->rowCount() )
+  {
+    setError( QString( "Índice de fila inválido: %1" ).arg( row ) );
+    return false;
+  }
 
-    if (!m_tableModel->removeRow(row)) {
-        setError(QString("Error eliminando fila: %1").arg(m_tableModel->lastError().text()));
-        return false;
-    }
+  if ( !m_tableModel->removeRow( row ) )
+  {
+    setError( QString( "Error eliminando fila: %1" ).arg( m_tableModel->lastError().text() ) );
+    return false;
+  }
 
-    qDebug() << "Row removed at index:" << row;
+  qDebug() << "Row removed at index:" << row;
 
-    emit rowCountChanged();
-    emit dataChanged();
-    return true;
+  emit rowCountChanged();
+  emit dataChanged();
+  return true;
 }
 
 /**
@@ -234,21 +251,23 @@ bool DBManager::removeRow(int row)
  */
 bool DBManager::submitChanges()
 {
-    if (!m_tableModel) {
-        setError("No hay tabla cargada");
-        return false;
-    }
+  if ( !m_tableModel )
+  {
+    setError( "No hay tabla cargada" );
+    return false;
+  }
 
-    if (!m_tableModel->submitAll()) {
-        setError(QString("Error guardando cambios: %1").arg(m_tableModel->lastError().text()));
-        m_tableModel->revertAll();
-        return false;
-    }
+  if ( !m_tableModel->submitAll() )
+  {
+    setError( QString( "Error guardando cambios: %1" ).arg( m_tableModel->lastError().text() ) );
+    m_tableModel->revertAll();
+    return false;
+  }
 
-    qDebug() << "All changes submitted successfully";
+  qDebug() << "All changes submitted successfully";
 
-    emit dataChanged();
-    return true;
+  emit dataChanged();
+  return true;
 }
 
 /**
@@ -256,35 +275,38 @@ bool DBManager::submitChanges()
  */
 bool DBManager::revertChanges()
 {
-    if (!m_tableModel) {
-        setError("No hay tabla cargada");
-        return false;
-    }
+  if ( !m_tableModel )
+  {
+    setError( "No hay tabla cargada" );
+    return false;
+  }
 
-    m_tableModel->revertAll();
-    qDebug() << "All changes reverted";
+  m_tableModel->revertAll();
+  qDebug() << "All changes reverted";
 
-    return true;
+  return true;
 }
 
 /**
  * Obtiene los nombres de columnas de una tabla
  */
-QStringList DBManager::getColumnNames(const QString &tableName) const
+QStringList DBManager::getColumnNames( const QString &tableName ) const
 {
-    QStringList columnNames;
+  QStringList columnNames;
 
-    if (!m_database.isOpen()) {
-        return columnNames;
-    }
-
-    QSqlRecord record = m_database.record(tableName);
-
-    for (int i = 0; i < record.count(); ++i) {
-        columnNames.append(record.fieldName(i));
-    }
-
+  if ( !m_database.isOpen() )
+  {
     return columnNames;
+  }
+
+  QSqlRecord record = m_database.record( tableName );
+
+  for ( int i = 0; i < record.count(); ++i )
+  {
+    columnNames.append( record.fieldName( i ) );
+  }
+
+  return columnNames;
 }
 
 /**
@@ -292,10 +314,11 @@ QStringList DBManager::getColumnNames(const QString &tableName) const
  */
 int DBManager::getRowCount() const
 {
-    if (!m_tableModel) {
-        return 0;
-    }
-    return m_tableModel->rowCount();
+  if ( !m_tableModel )
+{
+  return 0;
+}
+return m_tableModel->rowCount();
 }
 
 /**
@@ -303,28 +326,31 @@ int DBManager::getRowCount() const
  */
 int DBManager::getColumnCount() const
 {
-    if (!m_tableModel) {
-        return 0;
-    }
-    return m_tableModel->columnCount();
+  if ( !m_tableModel )
+{
+  return 0;
+}
+return m_tableModel->columnCount();
 }
 
 /**
  * Filtra la tabla con una expresión SQL
  */
-void DBManager::filterTable(const QString &filterExpression)
+void DBManager::filterTable( const QString &filterExpression )
 {
-    if (!m_tableModel) {
-        setError("No hay tabla cargada");
-        return;
-    }
+  if ( !m_tableModel )
+  {
+    setError( "No hay tabla cargada" );
+    return;
+  }
 
-    qDebug() << "Applying filter:" << filterExpression;
+  qDebug() << "Applying filter:" << filterExpression;
 
-    m_tableModel->setFilter(filterExpression);
-    if (!m_tableModel->select()) {
-        setError(QString("Error filtrando tabla: %1").arg(m_tableModel->lastError().text()));
-    }
+  m_tableModel->setFilter( filterExpression );
+  if ( !m_tableModel->select() )
+  {
+    setError( QString( "Error filtrando tabla: %1" ).arg( m_tableModel->lastError().text() ) );
+  }
 }
 
 /**
@@ -332,73 +358,79 @@ void DBManager::filterTable(const QString &filterExpression)
  */
 void DBManager::clearFilter()
 {
-    if (!m_tableModel) {
-        return;
-    }
+  if ( !m_tableModel )
+  {
+    return;
+  }
 
-    qDebug() << "Clearing filter";
+  qDebug() << "Clearing filter";
 
-    m_tableModel->setFilter("");
-    m_tableModel->select();
+  m_tableModel->setFilter( "" );
+  m_tableModel->select();
 }
 
 /**
  * Exporta los datos a CSV
  */
-bool DBManager::exportToCSV(const QString &filePath)
+bool DBManager::exportToCSV( const QString &filePath )
 {
-    if (!m_tableModel) {
-        setError("No hay tabla cargada para exportar");
-        return false;
-    }
+  if ( !m_tableModel )
+  {
+    setError( "No hay tabla cargada para exportar" );
+    return false;
+  }
 
-    QFile file(filePath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        setError(QString("No se pudo crear archivo: %1").arg(filePath));
-        return false;
-    }
+  QFile file( filePath );
+  if ( !file.open( QIODevice::WriteOnly | QIODevice::Text ) )
+  {
+    setError( QString( "No se pudo crear archivo: %1" ).arg( filePath ) );
+    return false;
+  }
 
-    QTextStream out(&file);
+  QTextStream out( &file );
 
-    // Escribir encabezados
-    for (int col = 0; col < m_tableModel->columnCount(); ++col) {
-        if (col > 0) out << ",";
-        out << m_tableModel->headerData(col, Qt::Horizontal).toString();
+  // Escribir encabezados
+  for ( int col = 0; col < m_tableModel->columnCount(); ++col )
+  {
+    if ( col > 0 ) out << ",";
+    out << m_tableModel->headerData( col, Qt::Horizontal ).toString();
+  }
+  out << "\n";
+
+  // Escribir datos
+  for ( int row = 0; row < m_tableModel->rowCount(); ++row )
+  {
+    for ( int col = 0; col < m_tableModel->columnCount(); ++col )
+    {
+      if ( col > 0 ) out << ",";
+      QVariant value = m_tableModel->data( m_tableModel->index( row, col ) );
+      out << value.toString();
     }
     out << "\n";
+  }
 
-    // Escribir datos
-    for (int row = 0; row < m_tableModel->rowCount(); ++row) {
-        for (int col = 0; col < m_tableModel->columnCount(); ++col) {
-            if (col > 0) out << ",";
-            QVariant value = m_tableModel->data(m_tableModel->index(row, col));
-            out << value.toString();
-        }
-        out << "\n";
-    }
+  file.close();
+  qDebug() << "Data exported to CSV:" << filePath;
 
-    file.close();
-    qDebug() << "Data exported to CSV:" << filePath;
-
-    return true;
+  return true;
 }
 
 /**
  * Valida si el nombre de la tabla existe
  */
-bool DBManager::isValidTableName(const QString &tableName) const
+bool DBManager::isValidTableName( const QString &tableName ) const
 {
-    return m_tableList.contains(tableName);
+  return m_tableList.contains( tableName );
 }
 
 /**
  * Establece el último error y emite la señal
  */
-void DBManager::setError(const QString &errorMessage)
+void DBManager::setError( const QString &errorMessage )
 {
-    m_lastError = errorMessage;
-    qWarning() << "DBManager Error:" << errorMessage;
-    emit errorOccurred(errorMessage);
+  m_lastError = errorMessage;
+  qWarning() << "DBManager Error:" << errorMessage;
+  emit errorOccurred( errorMessage );
 }
 
 /**
@@ -406,56 +438,63 @@ void DBManager::setError(const QString &errorMessage)
 */
 QString DBManager::getDatabaseInfo() const
 {
-    if (!m_database.isOpen()) {
-        return "Base de datos no está abierta";
+  if ( !m_database.isOpen() )
+{
+  return "Base de datos no está abierta";
+}
+
+QString info;
+QTextStream stream( &info );
+
+// Obtener nombre del archivo
+QFileInfo fileInfo( m_databasePath );
+QString dbName = fileInfo.fileName();
+
+stream << "╔════════════════════════════════════════════════════════════╗\n";
+stream << "║           INFORMACIÓN DE BASE DE DATOS                     ║\n";
+stream << "╚════════════════════════════════════════════════════════════╝\n\n";
+
+stream << "📁 Nombre: " << dbName << "\n";
+stream << "📍 Ruta: " << m_databasePath << "\n";
+stream << "💾 Tamaño: " << ( QFileInfo( m_databasePath ).size() / 1024 ) << " KB\n";
+stream << "\n";
+
+stream << "┌────────────────────────────────────────────────────────────��\n";
+stream << "│ TABLAS DISPONIBLES (" << m_tableList.count() << "):\n";
+stream << "└────────────────────────────────────────────────────────────┘\n\n";
+
+if ( m_tableList.isEmpty() )
+{
+  stream << "  (Sin tablas)\n\n";
+}
+else
+{
+  for ( int i = 0; i < m_tableList.count(); ++i )
+    {
+      const QString &tableName = m_tableList.at( i );
+      QStringList columns = getColumnNames( tableName );
+
+      stream << QString( "  %1. %2\n" ).arg( i + 1 ).arg( tableName );
+      stream << QString( "     ├─ Columnas: %1\n" ).arg( columns.count() );
+
+      // Listar columnas
+      for ( int j = 0; j < columns.count() && j < 5; ++j )
+      {
+        stream << QString( "     │  • %1\n" ).arg( columns.at( j ) );
+      }
+
+      if ( columns.count() > 5 )
+      {
+        stream << QString( "     │  • ... y %1 más\n" ).arg( columns.count() - 5 );
+      }
+
+      stream << "\n";
     }
+  }
 
-    QString info;
-    QTextStream stream(&info);
+  stream << "╔════════════════════════════════════════════════════════════╗\n";
 
-    // Obtener nombre del archivo
-    QFileInfo fileInfo(m_databasePath);
-    QString dbName = fileInfo.fileName();
-
-    stream << "╔════════════════════════════════════════════════════════════╗\n";
-    stream << "║           INFORMACIÓN DE BASE DE DATOS                     ║\n";
-    stream << "╚════════════════════════════════════════════════════════════╝\n\n";
-
-    stream << "📁 Nombre: " << dbName << "\n";
-    stream << "📍 Ruta: " << m_databasePath << "\n";
-    stream << "💾 Tamaño: " << (QFileInfo(m_databasePath).size() / 1024) << " KB\n";
-    stream << "\n";
-
-    stream << "┌────────────────────────────────────────────────────────────��\n";
-    stream << "│ TABLAS DISPONIBLES (" << m_tableList.count() << "):\n";
-    stream << "└────────────────────────────────────────────────────────────┘\n\n";
-
-    if (m_tableList.isEmpty()) {
-        stream << "  (Sin tablas)\n\n";
-    } else {
-        for (int i = 0; i < m_tableList.count(); ++i) {
-            const QString &tableName = m_tableList.at(i);
-            QStringList columns = getColumnNames(tableName);
-
-            stream << QString("  %1. %2\n").arg(i + 1).arg(tableName);
-            stream << QString("     ├─ Columnas: %1\n").arg(columns.count());
-
-            // Listar columnas
-            for (int j = 0; j < columns.count() && j < 5; ++j) {
-                stream << QString("     │  • %1\n").arg(columns.at(j));
-            }
-
-            if (columns.count() > 5) {
-                stream << QString("     │  • ... y %1 más\n").arg(columns.count() - 5);
-            }
-
-            stream << "\n";
-        }
-    }
-
-    stream << "╔════════════════════════════════════════════════════════════╗\n";
-
-    return info;
+  return info;
 }
 
 /*
@@ -463,12 +502,13 @@ QString DBManager::getDatabaseInfo() const
  */
 QString DBManager::getDatabaseName() const
 {
-    if (m_databasePath.isEmpty()) {
-        return "";
-    }
+  if ( m_databasePath.isEmpty() )
+{
+  return "";
+}
 
-    QFileInfo fileInfo(m_databasePath);
-    return fileInfo.fileName();
+QFileInfo fileInfo( m_databasePath );
+return fileInfo.fileName();
 }
 
 /**
@@ -476,128 +516,146 @@ QString DBManager::getDatabaseName() const
  */
 QString DBManager::getDatabasePath() const
 {
-    return m_databasePath;
+  return m_databasePath;
 }
 
 /**
  * Verifica si una tabla existe
  */
-bool DBManager::tableExists(const QString &tableName) const
+bool DBManager::tableExists( const QString &tableName ) const
 {
-    return m_tableList.contains(tableName);
+  return m_tableList.contains( tableName );
 }
 
 /**
  * Crea una nueva tabla
  */
-bool DBManager::createTable(const QString &tableName, const QVariantList &fields)
+bool DBManager::createTable( const QString &tableName, const QVariantList &fields )
 {
-    if (!m_database.isOpen()) {
-        setError("Base de datos no está abierta");
-        return false;
+  if ( !m_database.isOpen() )
+  {
+    setError( "Base de datos no está abierta" );
+    return false;
+  }
+
+  if ( tableName.isEmpty() )
+  {
+    setError( "El nombre de la tabla no puede estar vacío" );
+    return false;
+  }
+
+  if ( m_tableList.contains( tableName ) )
+  {
+    setError( QString( "La tabla '%1' ya existe" ).arg( tableName ) );
+    return false;
+  }
+
+  if ( fields.isEmpty() )
+  {
+    setError( "Debe agregar al menos un campo" );
+    return false;
+  }
+
+  // Construir sentencia CREATE TABLE
+  QString createTableSQL = QString( "CREATE TABLE %1 (\n" ).arg( tableName );
+  createTableSQL += "  id INTEGER PRIMARY KEY AUTOINCREMENT,\n";
+
+  for ( int i = 0; i < fields.count(); ++i )
+  {
+    QVariantMap field = fields.at( i ).toMap();
+    QString fieldName = field["name"].toString();
+    QString fieldType = field["type"].toString();
+
+    if ( fieldName.isEmpty() ) continue;
+
+    createTableSQL += QString( "  %1 %2" ).arg( fieldName, fieldType );
+
+    if ( i < fields.count() - 1 )
+    {
+      createTableSQL += ",\n";
     }
-
-    if (tableName.isEmpty()) {
-        setError("El nombre de la tabla no puede estar vacío");
-        return false;
+    else
+    {
+      createTableSQL += "\n";
     }
+  }
 
-    if (m_tableList.contains(tableName)) {
-        setError(QString("La tabla '%1' ya existe").arg(tableName));
-        return false;
-    }
+  createTableSQL += ")";
 
-    if (fields.isEmpty()) {
-        setError("Debe agregar al menos un campo");
-        return false;
-    }
+  qDebug() << "Creating table with SQL:" << createTableSQL;
 
-    // Construir sentencia CREATE TABLE
-    QString createTableSQL = QString("CREATE TABLE %1 (\n").arg(tableName);
-    createTableSQL += "  id INTEGER PRIMARY KEY AUTOINCREMENT,\n";
+  QSqlQuery query( m_database );
+  if ( !query.exec( createTableSQL ) )
+  {
+    setError( QString( "Error creando tabla: %1" ).arg( query.lastError().text() ) );
+    return false;
+  }
 
-    for (int i = 0; i < fields.count(); ++i) {
-        QVariantMap field = fields.at(i).toMap();
-        QString fieldName = field["name"].toString();
-        QString fieldType = field["type"].toString();
+  // Recargar lista de tablas
+  loadTableList();
 
-        if (fieldName.isEmpty()) continue;
+  qDebug() << "Table created successfully:" << tableName;
+  emit tableCreated( tableName );
 
-        createTableSQL += QString("  %1 %2").arg(fieldName, fieldType);
-
-        if (i < fields.count() - 1) {
-            createTableSQL += ",\n";
-        } else {
-            createTableSQL += "\n";
-        }
-    }
-
-    createTableSQL += ")";
-
-    qDebug() << "Creating table with SQL:" << createTableSQL;
-
-    QSqlQuery query(m_database);
-    if (!query.exec(createTableSQL)) {
-        setError(QString("Error creando tabla: %1").arg(query.lastError().text()));
-        return false;
-    }
-
-    // Recargar lista de tablas
-    loadTableList();
-
-    qDebug() << "Table created successfully:" << tableName;
-    emit tableCreated(tableName);
-
-    return true;
+  return true;
 }
 
 /**
  * Copia el archivo .db activo a la ruta de destino elegida por el usuario.
  * Soporta URIs file:// y file:/// (Windows/Android) y rutas POSIX directas.
  */
-bool DBManager::copyDatabaseTo(const QString &destinationPath)
+bool DBManager::copyDatabaseTo( const QString &destinationPath )
 {
-    if (m_databasePath.isEmpty()) {
-        setError("No hay base de datos activa para exportar");
-        return false;
+  if ( m_databasePath.isEmpty() )
+  {
+    setError( "No hay base de datos activa para exportar" );
+    return false;
+  }
+
+  // Normalizar URI → ruta del sistema de archivos
+  QString destPath = destinationPath;
+  if ( destPath.startsWith( "file:///" ) )
+  {
+    destPath = destPath.mid( 8 ); // Windows: file:///C:/... → C:/...
+  }
+  else if ( destPath.startsWith( "file://" ) )
+  {
+    destPath = destPath.mid( 7 ); // Android/Linux: file:///storage/... → /storage/...
+  }
+
+  // Eliminar archivo destino si ya existe
+  if ( QFile::exists( destPath ) )
+  {
+    if ( !QFile::remove( destPath ) )
+    {
+      setError( QString( "No se pudo reemplazar el archivo existente: %1" ).arg( destPath ) );
+      return false;
     }
+  }
 
-    // Normalizar URI → ruta del sistema de archivos
-    QString destPath = destinationPath;
-    if (destPath.startsWith("file:///")) {
-        destPath = destPath.mid(8);   // Windows: file:///C:/... → C:/...
-    } else if (destPath.startsWith("file://")) {
-        destPath = destPath.mid(7);   // Android/Linux: file:///storage/... → /storage/...
-    }
+  // Cerrar la BD temporalmente para garantizar copia limpia (flush de WAL)
+  bool wasOpen = m_database.isOpen();
+  if ( wasOpen )
+  {
+    m_database.close();
+  }
 
-    // Eliminar archivo destino si ya existe
-    if (QFile::exists(destPath)) {
-        if (!QFile::remove(destPath)) {
-            setError(QString("No se pudo reemplazar el archivo existente: %1").arg(destPath));
-            return false;
-        }
-    }
+  bool success = QFile::copy( m_databasePath, destPath );
 
-    // Cerrar la BD temporalmente para garantizar copia limpia (flush de WAL)
-    bool wasOpen = m_database.isOpen();
-    if (wasOpen) {
-        m_database.close();
-    }
+  // Reabrir la BD
+  if ( wasOpen )
+  {
+    m_database.open();
+    loadTableList();
+  }
 
-    bool success = QFile::copy(m_databasePath, destPath);
+  if ( !success )
+  {
+    setError( QString( "Error al copiar la base de datos a: %1" ).arg( destPath ) );
+    return false;
+  }
 
-    // Reabrir la BD
-    if (wasOpen) {
-        m_database.open();
-        loadTableList();
-    }
-
-    if (!success) {
-        setError(QString("Error al copiar la base de datos a: %1").arg(destPath));
-        return false;
-    }
-
-    qDebug() << "Database exported to:" << destPath;
-    emit databaseCreated(destPath);
-    return true;
+  qDebug() << "Database exported to:" << destPath;
+  emit databaseCreated( destPath );
+  return true;
 }
