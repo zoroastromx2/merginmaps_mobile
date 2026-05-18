@@ -476,14 +476,14 @@ ApplicationWindow {
 
       // Elimina el diálogo createDatabaseDialog y reemplázalo con este botón en MMToolbar
 
-      MMToolbarButton {
+     /* MMToolbarButton {
         text: qsTr("Projects")
         iconSource: __style.homeIcon
         visible: true // <-- para que no sea visible 2026
         onClicked: {
           stateManager.state = "projects"
         }
-      }
+      }*/
 
       MMToolbarButton {
         id: addTable
