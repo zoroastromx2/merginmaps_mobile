@@ -284,6 +284,8 @@ void TestActiveProject::testGeoZoomConfigUsesLoadedProjectConfig()
 
   QFile localConfig( QDir( projectDir.path() ).filePath( QStringLiteral( "cvegeo_config.json" ) ) );
   QVERIFY( localConfig.open( QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate ) );
+  // Intentionally omit CVEGEO here to verify that an already loaded project uses
+  // its local config instead of the global AppDataLocation config below.
   localConfig.write( R"([{"BD":"NacionalBD.gpkg","Capa":"01m"}])" );
   localConfig.close();
 

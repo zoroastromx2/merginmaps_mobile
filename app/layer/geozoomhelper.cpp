@@ -25,10 +25,10 @@ namespace
 {
 struct GeoZoomConfigEntry
 {
-    QString projectPath;
-    QString bdFile;
-    QString layerName;
-    QString cvegeo;
+    QString projectPath; // Optional project path from JSON, used when no project is loaded.
+    QString bdFile;      // GeoPackage filename relative to the active project's directory.
+    QString layerName;   // Layer name inside the GeoPackage.
+    QString cvegeo;      // CVEGEO value used to find the feature to zoom to.
 };
 
 QString projectLocalCvegeoConfigPath( const QString &projectDir )
