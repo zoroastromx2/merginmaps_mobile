@@ -577,6 +577,7 @@ ApplicationWindow {
           // Directorio del proyecto activo
           var activeProj = AppSettings.activeProject
           var projectDir = activeProj.substring( 0, activeProj.lastIndexOf("/") )
+          console.log("msj: Project Dir: " + projectDir)
 
           // Ruta al JSON de configuración (junto al .qgz)
           var jsonPath = projectDir + "/cvegeo_config.json"
@@ -771,9 +772,8 @@ ApplicationWindow {
         __notificationModel.addError( errorMsg + filePath )
         return
       }
-      var dir  = filePath.substring( 0, lastSlash )
       var name = filePath.substring( lastSlash + 1 ).replace( /\.[^/.]+$/, "" )
-      __localProjectsManager.addLocalProject( dir, name )
+      __localProjectsManager.addLocalProjectByFilePath( filePath, name )
       if ( __activeProject.load( filePath ) ) {
         stateManager.state = "map"
       } else {
