@@ -4,13 +4,14 @@
 #include <QString>
 
 class InputMapSettings;
+class ActiveProject;
 
 class GeoZoomHelper : public QObject
 {
     Q_OBJECT
 
 public:
-    explicit GeoZoomHelper( QObject *parent = nullptr );
+    explicit GeoZoomHelper( ActiveProject *activeProject, QObject *parent = nullptr );
     ~GeoZoomHelper() override = default;
 
     /**
@@ -40,6 +41,13 @@ public:
                                       InputMapSettings *mapSettings );
 
     /**
+   * Lee la configuración CVEGEO apropiada para el estado actual de la app.
+   * Si no hay proyecto cargado, intenta leer "Proyecto" desde el JSON global,
+   * carga el proyecto y después realiza el zoom.
+   */
+    Q_INVOKABLE bool zoomFromConfiguredJson( InputMapSettings *mapSettings );
+
+    /**
    * Búsqueda y zoom directo, sin pasar por JSON.
    */
     Q_INVOKABLE bool zoomToCvegeo( const QString &gpkgPath,
@@ -57,5 +65,6 @@ signals:
 
 private:
     void setLastError( const QString &msg );
+    ActiveProject *mActiveProject = nullptr;
     QString mLastError;
 };

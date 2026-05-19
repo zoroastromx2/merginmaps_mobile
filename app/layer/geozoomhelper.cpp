@@ -1,11 +1,15 @@
 #include "geozoomhelper.h"
+#include "activeproject.h"
 #include "map/inputmapsettings.h"
 
 // Qt
+#include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QStandardPaths>
 
 // QGIS
 #include <qgsvectorlayer.h>
@@ -17,8 +21,82 @@
 #include <qgsproject.h>
 #include <qgsmessagelog.h>
 
-GeoZoomHelper::GeoZoomHelper( QObject *parent )
+namespace
+{
+struct GeoZoomConfigEntry
+{
+    QString projectPath; // Optional project path from JSON, used when no project is loaded.
+    QString bdFile;      // GeoPackage filename relative to the active project's directory.
+    QString layerName;   // Layer name inside the GeoPackage.
+    QString cvegeo;      // CVEGEO value used to find the feature to zoom to.
+};
+
+QString projectLocalCvegeoConfigPath( const QString &projectDir )
+{
+    return QDir( projectDir ).filePath( QStringLiteral( "cvegeo_config.json" ) );
+}
+
+QString projectDirectoryFromPath( const QString &projectPath )
+{
+    return QFileInfo( projectPath ).absolutePath();
+}
+
+// Relative project paths from the config are resolved against the directory
+// that contains the JSON file. Absolute paths are used as-is.
+QString resolveProjectPath( const QString &projectPath, const QString &jsonPath )
+{
+    QFileInfo projectInfo( projectPath );
+    if ( projectInfo.isAbsolute() )
+        return projectInfo.filePath();
+
+    return QDir( QFileInfo( jsonPath ).absolutePath() ).filePath( projectPath );
+}
+
+bool readFirstConfigEntry( const QString &jsonPath, GeoZoomConfigEntry &entry, QString &errorMsg )
+{
+    QFile file( jsonPath );
+    if ( !file.open( QIODevice::ReadOnly | QIODevice::Text ) )
+    {
+        errorMsg = QStringLiteral( "No se pudo abrir el archivo JSON:\n%1" ).arg( jsonPath );
+        return false;
+    }
+
+    const QByteArray raw = file.readAll();
+    file.close();
+
+    QJsonParseError parseErr;
+    const QJsonDocument doc = QJsonDocument::fromJson( raw, &parseErr );
+    if ( parseErr.error != QJsonParseError::NoError )
+    {
+        errorMsg = QStringLiteral( "JSON inválido: %1" ).arg( parseErr.errorString() );
+        return false;
+    }
+
+    if ( !doc.isArray() || doc.array().isEmpty() )
+    {
+        errorMsg = QStringLiteral( "El JSON no contiene entradas." );
+        return false;
+    }
+
+    const QJsonObject jsonEntry = doc.array().first().toObject();
+    entry.projectPath = jsonEntry.value( QStringLiteral( "Proyecto" ) ).toString().trimmed();
+    entry.bdFile = jsonEntry.value( QStringLiteral( "BD" ) ).toString().trimmed();
+    entry.layerName = jsonEntry.value( QStringLiteral( "Capa" ) ).toString().trimmed();
+    entry.cvegeo = jsonEntry.value( QStringLiteral( "CVEGEO" ) ).toString().trimmed();
+
+    if ( entry.cvegeo.isEmpty() || entry.bdFile.isEmpty() || entry.layerName.isEmpty() )
+    {
+        errorMsg = QStringLiteral( "El JSON debe contener los campos: CVEGEO, BD y Capa." );
+        return false;
+    }
+
+    return true;
+}
+} // namespace
+
+GeoZoomHelper::GeoZoomHelper( ActiveProject *activeProject, QObject *parent )
     : QObject( parent )
+    , mActiveProject( activeProject )
 {
 }
 
@@ -47,58 +125,91 @@ bool GeoZoomHelper::zoomFromJsonFile( const QString &jsonPath,
                                      InputMapSettings *mapSettings,
                                      QString &errorMsg )
 {
-    // 1. Leer el archivo --------------------------------------------------------
-    QFile file( jsonPath );
-    if ( !file.open( QIODevice::ReadOnly | QIODevice::Text ) )
+    GeoZoomConfigEntry entry;
+    if ( !readFirstConfigEntry( jsonPath, entry, errorMsg ) )
     {
-        errorMsg = QStringLiteral( "No se pudo abrir el archivo JSON:\n%1" ).arg( jsonPath );
-        return false;
-    }
-
-    const QByteArray raw = file.readAll();
-    file.close();
-
-    // 2. Parsear JSON -----------------------------------------------------------
-    QJsonParseError parseErr;
-    const QJsonDocument doc = QJsonDocument::fromJson( raw, &parseErr );
-
-    if ( parseErr.error != QJsonParseError::NoError )
-    {
-        errorMsg = QStringLiteral( "JSON inválido: %1" ).arg( parseErr.errorString() );
-        return false;
-    }
-
-    if ( !doc.isArray() || doc.array().isEmpty() )
-    {
-        errorMsg = QStringLiteral( "El JSON debe ser un array no vacío." );
-        return false;
-    }
-
-    // 3. Extraer campos de la primera entrada -----------------------------------
-    const QJsonObject entry = doc.array().first().toObject();
-
-    const QString cvegeo  = entry.value( QStringLiteral( "CVEGEO" ) ).toString().trimmed();
-    const QString bdFile  = entry.value( QStringLiteral( "BD" ) ).toString().trimmed();
-    const QString capa    = entry.value( QStringLiteral( "Capa" ) ).toString().trimmed();
-
-    if ( cvegeo.isEmpty() || bdFile.isEmpty() || capa.isEmpty() )
-    {
-        errorMsg = QStringLiteral( "El JSON debe contener los campos: CVEGEO, BD y Capa." );
         return false;
     }
 
     // 4. Construir ruta al GeoPackage ------------------------------------------
     QString dir = projectDir;
     if ( !dir.endsWith( '/' ) ) dir += '/';
-    const QString gpkgPath = dir + bdFile;
+    const QString gpkgPath = dir + entry.bdFile;
 
     // 5. Delegar en zoomToCvegeo -----------------------------------------------
-    if ( !zoomToCvegeo( gpkgPath, capa, cvegeo, mapSettings ) )
+    if ( !zoomToCvegeo( gpkgPath, entry.layerName, entry.cvegeo, mapSettings ) )
     {
         errorMsg = mLastError.isEmpty()
         ? QStringLiteral( "No se encontró CVEGEO '%1' en la capa '%2'." )
-                .arg( cvegeo, capa )
+                .arg( entry.cvegeo, entry.layerName )
         : mLastError;
+        return false;
+    }
+
+    return true;
+}
+
+bool GeoZoomHelper::zoomFromConfiguredJson( InputMapSettings *mapSettings )
+{
+    if ( !mActiveProject )
+    {
+        setLastError( QStringLiteral( "GeoZoomHelper: activeProject es nulo." ) );
+        return false;
+    }
+
+    QString jsonPath;
+    QString projectDir;
+    GeoZoomConfigEntry entry;
+
+    if ( mActiveProject->isProjectLoaded() )
+    {
+        const QString projectPath = mActiveProject->qgsProject()->fileName();
+        projectDir = projectDirectoryFromPath( projectPath );
+        jsonPath = projectLocalCvegeoConfigPath( projectDir );
+
+        QString errorMsg;
+        if ( !readFirstConfigEntry( jsonPath, entry, errorMsg ) )
+        {
+            setLastError( errorMsg );
+            return false;
+        }
+    }
+    else
+    {
+        jsonPath = QDir( QStandardPaths::writableLocation( QStandardPaths::AppDataLocation ) )
+                       .filePath( QStringLiteral( "cvegeo_config.json" ) );
+
+        QString errorMsg;
+        if ( !readFirstConfigEntry( jsonPath, entry, errorMsg ) )
+        {
+            setLastError( errorMsg );
+            return false;
+        }
+
+        if ( entry.projectPath.isEmpty() )
+        {
+            setLastError( QStringLiteral(
+                "No hay proyecto activo y el JSON no contiene la clave 'Proyecto'." ) );
+            return false;
+        }
+
+        const QString projectPath = resolveProjectPath( entry.projectPath, jsonPath );
+        if ( !mActiveProject->load( projectPath ) )
+        {
+            setLastError( QStringLiteral( "No se pudo cargar el proyecto: %1" ).arg( projectPath ) );
+            return false;
+        }
+
+        projectDir = projectDirectoryFromPath( projectPath );
+    }
+
+    const QString gpkgPath = QDir( projectDir ).filePath( entry.bdFile );
+    if ( !zoomToCvegeo( gpkgPath, entry.layerName, entry.cvegeo, mapSettings ) )
+    {
+        setLastError( mLastError.isEmpty()
+                          ? QStringLiteral( "No se encontró CVEGEO '%1' en la capa '%2'." )
+                                .arg( entry.cvegeo, entry.layerName )
+                          : mLastError );
         return false;
     }
 
