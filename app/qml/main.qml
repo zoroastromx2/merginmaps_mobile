@@ -158,6 +158,86 @@ ApplicationWindow {
     }
   }
 
+  // ── Lee el JSON de configuración y dispara el zoom ───────────────────────
+  function readCvegeoJson() {
+    // Ruta al archivo JSON. Ajusta según la plataforma:
+    //   Android/iOS : StandardPaths.AppDataLocation + "/cvegeo_config.json"
+    //   Windows/Desktop: junto al .qgz o en AppData
+    var jsonPath = StandardPaths.writableLocation(StandardPaths.AppDataLocation)
+                   + "/cvegeo_config.json"
+
+    console.log("msj: " + jsonPath)
+    console.log("msj: Lee el JSON de configuración y dispara el zoom")
+    var xhr = new XMLHttpRequest()
+    xhr.open("GET", "file://" + jsonPath, /*async=*/false)
+    xhr.send()
+
+    if (xhr.status !== 200 && xhr.responseText === "") {
+        console.log("msj: No se encontró el archivo de configuración:\n" + jsonPath)
+      __notificationModel.addError(
+        qsTr("No se encontró el archivo de configuración:\n") + jsonPath)
+      zoomCvegeoButton.enabled = true
+      return
+    }
+
+    var entries
+    try {
+      entries = JSON.parse(xhr.responseText)
+    } catch (e) {
+      __notificationModel.addError(qsTr("JSON inválido: ") + e.message)
+      zoomCvegeoButton.enabled = true
+      return
+    }
+
+    if (!Array.isArray(entries) || entries.length === 0) {
+      __notificationModel.addError(qsTr("El JSON no contiene entradas."))
+      zoomCvegeoButton.enabled = true
+      return
+    }
+
+    // Tomar la primera entrada (o iterar si necesitas procesar todas)
+    var entry   = entries[0]
+    var cvegeo  = entry["CVEGEO"]   || ""
+    var bdFile  = entry["BD"]       || ""   // ej. "NacionalBD.gpkg"
+    var layer   = entry["Capa"]     || ""   // ej. "01m"
+    var project = entry["Proyecto"] || ""   // ej. "/ruta/Aguascalientes.qgz"
+
+    if (cvegeo === "" || bdFile === "" || layer === "") {
+      __notificationModel.addError(
+        qsTr("El JSON debe tener los campos CVEGEO, BD y Capa."))
+      zoomCvegeoButton.enabled = true
+      return
+    }
+
+    // Si el JSON trae un proyecto diferente al activo, cargarlo primero
+    if (project !== "" && project !== AppSettings.activeProject) {
+      if (!__activeProject.load(project)) {
+        __notificationModel.addError(qsTr("No se pudo cargar el proyecto: ") + project)
+        zoomCvegeoButton.enabled = true
+        return
+      }
+      stateManager.state = "map"
+    }
+
+    // Construir ruta al GeoPackage relativa al directorio del proyecto activo
+    var projectDir = AppSettings.activeProject.substring(
+                       0, AppSettings.activeProject.lastIndexOf("/"))
+    var gpkgPath = projectDir + "/" + bdFile
+
+    // ── Llamada al backend C++ ──────────────────────────────────────────────
+    var ok = __geoZoomHelper.zoomToCvegeo(gpkgPath, layer, cvegeo, map.mapSettings)
+
+    if (!ok) {
+      __notificationModel.addError(
+        qsTr("No se encontró CVEGEO '%1' en la capa '%2'.").arg(cvegeo).arg(layer))
+    } else {
+      map.centeredToGPS = false   // desactiva centrado en GPS
+      stateManager.state = "map"
+    }
+
+    zoomCvegeoButton.enabled = true
+  }
+
 /*  Component.onCompleted: {
 
     // load default project
@@ -484,6 +564,36 @@ ApplicationWindow {
           stateManager.state = "projects"
         }
       }*/
+
+      // ── Botón: Zoom a CVEGEO desde JSON ─────────────────────────────────────
+      MMToolbarButton {
+        id: zoomCvegeoButton
+        text: qsTr("Ir a CVEGEO")
+        iconSource: __style.searchIcon
+
+        onClicked: {
+          zoomCvegeoButton.enabled = false
+
+          // Directorio del proyecto activo
+          var activeProj = AppSettings.activeProject
+          var projectDir = activeProj.substring( 0, activeProj.lastIndexOf("/") )
+
+          // Ruta al JSON de configuración (junto al .qgz)
+          var jsonPath = projectDir + "/cvegeo_config.json"
+
+          // Toda la lógica (leer JSON + buscar + zoom) ocurre en C++
+          var ok = __geoZoomHelper.zoomFromJsonFile( jsonPath, projectDir, map.mapSettings )
+
+          if ( !ok ) {
+            __notificationModel.addError( __geoZoomHelper.lastError )
+          } else {
+            map.centeredToGPS = false
+            stateManager.state = "map"
+          }
+
+          zoomCvegeoButton.enabled = true
+        }
+      }
 
       MMToolbarButton {
         id: addTable

@@ -144,6 +144,8 @@
 
 #include "streamingintervaltype.h"
 
+#include "layer/geozoomhelper.h"
+
 #include <QQuickStyle>
 
 #ifdef MOBILE_OS
@@ -527,6 +529,9 @@ int main( int argc, char *argv[] )
   // Create Input classes
   GeodiffUtils::init();
   AndroidUtils androidUtils;
+
+  GeoZoomHelper *geoZoomHelper = new GeoZoomHelper( &engine );   // o pásale el parent adecuado
+  engine.rootContext()->setContextProperty( QStringLiteral( "__geoZoomHelper" ), geoZoomHelper );
 
   FilePickerManager filePickerManager;   // ← AÑADIR aquí (línea nueva después de la 529)
 
