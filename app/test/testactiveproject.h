@@ -34,6 +34,10 @@ class TestActiveProject : public QObject
     void testRecordingAllowed();
     void testLoadingFlagFileExpiration();
     void testLoadingAuthFileFromConfiguration();
+    void testGeoZoomConfigInvalidJson();
+    void testGeoZoomConfigUsesLoadedProjectConfig();
+    void testGeoZoomConfigRequiresProyectoWhenNoProjectLoaded();
+    void testGeoZoomConfigProjectLoadFailure();
 
   private:
     MerginApi *mApi;

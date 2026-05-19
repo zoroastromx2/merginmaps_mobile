@@ -158,86 +158,6 @@ ApplicationWindow {
     }
   }
 
-  // ── Lee el JSON de configuración y dispara el zoom ───────────────────────
-  function readCvegeoJson() {
-    // Ruta al archivo JSON. Ajusta según la plataforma:
-    //   Android/iOS : StandardPaths.AppDataLocation + "/cvegeo_config.json"
-    //   Windows/Desktop: junto al .qgz o en AppData
-    var jsonPath = StandardPaths.writableLocation(StandardPaths.AppDataLocation)
-                   + "/cvegeo_config.json"
-
-    console.log("msj: " + jsonPath)
-    console.log("msj: Lee el JSON de configuración y dispara el zoom")
-    var xhr = new XMLHttpRequest()
-    xhr.open("GET", "file://" + jsonPath, /*async=*/false)
-    xhr.send()
-
-    if (xhr.status !== 200 && xhr.responseText === "") {
-        console.log("msj: No se encontró el archivo de configuración:\n" + jsonPath)
-      __notificationModel.addError(
-        qsTr("No se encontró el archivo de configuración:\n") + jsonPath)
-      zoomCvegeoButton.enabled = true
-      return
-    }
-
-    var entries
-    try {
-      entries = JSON.parse(xhr.responseText)
-    } catch (e) {
-      __notificationModel.addError(qsTr("JSON inválido: ") + e.message)
-      zoomCvegeoButton.enabled = true
-      return
-    }
-
-    if (!Array.isArray(entries) || entries.length === 0) {
-      __notificationModel.addError(qsTr("El JSON no contiene entradas."))
-      zoomCvegeoButton.enabled = true
-      return
-    }
-
-    // Tomar la primera entrada (o iterar si necesitas procesar todas)
-    var entry   = entries[0]
-    var cvegeo  = entry["CVEGEO"]   || ""
-    var bdFile  = entry["BD"]       || ""   // ej. "NacionalBD.gpkg"
-    var layer   = entry["Capa"]     || ""   // ej. "01m"
-    var project = entry["Proyecto"] || ""   // ej. "/ruta/Aguascalientes.qgz"
-
-    if (cvegeo === "" || bdFile === "" || layer === "") {
-      __notificationModel.addError(
-        qsTr("El JSON debe tener los campos CVEGEO, BD y Capa."))
-      zoomCvegeoButton.enabled = true
-      return
-    }
-
-    // Si el JSON trae un proyecto diferente al activo, cargarlo primero
-    if (project !== "" && project !== AppSettings.activeProject) {
-      if (!__activeProject.load(project)) {
-        __notificationModel.addError(qsTr("No se pudo cargar el proyecto: ") + project)
-        zoomCvegeoButton.enabled = true
-        return
-      }
-      stateManager.state = "map"
-    }
-
-    // Construir ruta al GeoPackage relativa al directorio del proyecto activo
-    var projectDir = AppSettings.activeProject.substring(
-                       0, AppSettings.activeProject.lastIndexOf("/"))
-    var gpkgPath = projectDir + "/" + bdFile
-
-    // ── Llamada al backend C++ ──────────────────────────────────────────────
-    var ok = __geoZoomHelper.zoomToCvegeo(gpkgPath, layer, cvegeo, map.mapSettings)
-
-    if (!ok) {
-      __notificationModel.addError(
-        qsTr("No se encontró CVEGEO '%1' en la capa '%2'.").arg(cvegeo).arg(layer))
-    } else {
-      map.centeredToGPS = false   // desactiva centrado en GPS
-      stateManager.state = "map"
-    }
-
-    zoomCvegeoButton.enabled = true
-  }
-
 /*  Component.onCompleted: {
 
     // load default project
@@ -573,63 +493,7 @@ ApplicationWindow {
 
         onClicked: {
           zoomCvegeoButton.enabled = false
-
-          var activeProj = AppSettings.activeProject
-
-          // ── Si no hay proyecto abierto, leer el JSON y cargar el proyecto indicado ──
-          if (!activeProj || activeProj === "") {
-
-            var globalJsonPath = StandardPaths.writableLocation(StandardPaths.AppDataLocation)
-                                 + "/cvegeo_config.json"
-            var xhr0 = new XMLHttpRequest()
-            xhr0.open("GET", "file://" + globalJsonPath, /*async=*/false)
-            xhr0.send()
-
-            if (xhr0.responseText === "") {
-              __notificationModel.addError(qsTr("No se encontró el archivo de configuración:\n") + globalJsonPath)
-              zoomCvegeoButton.enabled = true
-              return
-            }
-
-            var entries0
-            try {
-              entries0 = JSON.parse(xhr0.responseText)
-            } catch (e) {
-              __notificationModel.addError(qsTr("JSON inválido: ") + e.message)
-              zoomCvegeoButton.enabled = true
-              return
-            }
-
-            if (!Array.isArray(entries0) || entries0.length === 0) {
-              __notificationModel.addError(qsTr("El JSON no contiene entradas."))
-              zoomCvegeoButton.enabled = true
-              return
-            }
-
-            var projectPath = (entries0[0]["Proyecto"] || "").trim()
-            if (projectPath === "") {
-              __notificationModel.addError(
-                qsTr("No hay proyecto activo y el JSON no contiene la clave 'Proyecto'."))
-              zoomCvegeoButton.enabled = true
-              return
-            }
-
-            if (!__activeProject.load(projectPath)) {
-              __notificationModel.addError(qsTr("No se pudo cargar el proyecto: ") + projectPath)
-              zoomCvegeoButton.enabled = true
-              return
-            }
-
-            stateManager.state = "map"
-            activeProj = AppSettings.activeProject
-          }
-
-          var projectDir = activeProj.substring(0, activeProj.lastIndexOf("/"))
-          console.log("msj: Project Dir: " + projectDir)
-
-          var jsonPath = projectDir + "/cvegeo_config.json"
-
-          var ok = __geoZoomHelper.zoomFromJsonFile(jsonPath, projectDir, map.mapSettings)
+          var ok = __geoZoomHelper.zoomFromConfiguredJson(map.mapSettings)
 
           if (!ok) {
             __notificationModel.addError(__geoZoomHelper.lastError)
@@ -2049,5 +1913,4 @@ ApplicationWindow {
   }*/
 
 }
-
 

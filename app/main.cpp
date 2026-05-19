@@ -530,9 +530,6 @@ int main( int argc, char *argv[] )
   GeodiffUtils::init();
   AndroidUtils androidUtils;
 
-  GeoZoomHelper *geoZoomHelper = new GeoZoomHelper( &engine );   // o pásale el parent adecuado
-  engine.rootContext()->setContextProperty( QStringLiteral( "__geoZoomHelper" ), geoZoomHelper );
-
   FilePickerManager filePickerManager;   // ← AÑADIR aquí (línea nueva después de la 529)
 
   IosUtils iosUtils;
@@ -546,6 +543,8 @@ int main( int argc, char *argv[] )
 
   ActiveLayer al;
   ActiveProject activeProject( *as, al, localProjectsManager );
+  GeoZoomHelper *geoZoomHelper = new GeoZoomHelper( &activeProject, &engine );
+  engine.rootContext()->setContextProperty( QStringLiteral( "__geoZoomHelper" ), geoZoomHelper );
   std::unique_ptr<VariablesManager> vm( new VariablesManager( ma.get() ) );
   vm->registerInputExpressionFunctions();
 

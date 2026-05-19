@@ -12,8 +12,31 @@
 #include "inpututils.h"
 #include "coreutils.h"
 #include "activeproject.h"
+#include "layer/geozoomhelper.h"
 
 #include <QtTest/QtTest>
+#include <QDir>
+#include <QFile>
+#include <QStandardPaths>
+#include <QTemporaryDir>
+
+namespace
+{
+QString cvegeoConfigPath()
+{
+  const QString appDataDir = QStandardPaths::writableLocation( QStandardPaths::AppDataLocation );
+  QDir().mkpath( appDataDir );
+  return QDir( appDataDir ).filePath( QStringLiteral( "cvegeo_config.json" ) );
+}
+
+void writeCvegeoConfig( const QString &content )
+{
+  QFile file( cvegeoConfigPath() );
+  QVERIFY( file.open( QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate ) );
+  file.write( content.toUtf8() );
+  file.close();
+}
+}
 
 TestActiveProject::TestActiveProject( MerginApi *api )
 {
@@ -29,6 +52,7 @@ void TestActiveProject::init()
 
 void TestActiveProject::cleanup()
 {
+  QFile::remove( cvegeoConfigPath() );
 }
 
 void TestActiveProject::testProjectValidations()
@@ -223,4 +247,90 @@ void TestActiveProject::testLoadingAuthFileFromConfiguration()
     count = authManager->configIds().count();
     QCOMPARE( count, 1 );
   }
+}
+
+void TestActiveProject::testGeoZoomConfigInvalidJson()
+{
+  AppSettings appSettings;
+  ActiveLayer activeLayer;
+  ActiveProject activeProject( appSettings, activeLayer, mApi->localProjectsManager() );
+  GeoZoomHelper geoZoomHelper( &activeProject );
+
+  writeCvegeoConfig( QStringLiteral( "{" ) );
+
+  QVERIFY( !geoZoomHelper.zoomFromConfiguredJson( nullptr ) );
+  QVERIFY( geoZoomHelper.lastError().startsWith( QStringLiteral( "JSON inválido:" ) ) );
+
+  QFile::remove( cvegeoConfigPath() );
+}
+
+void TestActiveProject::testGeoZoomConfigUsesLoadedProjectConfig()
+{
+  QTemporaryDir projectDir;
+  QVERIFY( projectDir.isValid() );
+  QVERIFY( InputUtils::cpDir( TestUtils::testDataDir() + "/planes", projectDir.path() ) );
+
+  const QString projectFilename = QStringLiteral( "quickapp_project.qgs" );
+  const QString projectPath = QDir( projectDir.path() ).filePath( projectFilename );
+
+  AppSettings appSettings;
+  ActiveLayer activeLayer;
+  ActiveProject activeProject( appSettings, activeLayer, mApi->localProjectsManager() );
+  GeoZoomHelper geoZoomHelper( &activeProject );
+
+  mApi->localProjectsManager().addLocalProject( projectDir.path(), projectFilename );
+  QVERIFY( activeProject.load( projectPath ) );
+
+  QFile localConfig( QDir( projectDir.path() ).filePath( QStringLiteral( "cvegeo_config.json" ) ) );
+  QVERIFY( localConfig.open( QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate ) );
+  localConfig.write( R"([{"BD":"NacionalBD.gpkg","Capa":"01m"}])" );
+  localConfig.close();
+
+  writeCvegeoConfig(
+      QStringLiteral( R"([{"Proyecto":"missing_project.qgz","CVEGEO":"01001","BD":"NacionalBD.gpkg","Capa":"01m"}])" ) );
+
+  QVERIFY( !geoZoomHelper.zoomFromConfiguredJson( nullptr ) );
+  QCOMPARE( geoZoomHelper.lastError(),
+            QStringLiteral( "El JSON debe contener los campos: CVEGEO, BD y Capa." ) );
+
+  const QString id = mApi->localProjectsManager().projectId( projectPath );
+  mApi->localProjectsManager().removeLocalProject( id );
+  QFile::remove( cvegeoConfigPath() );
+}
+
+void TestActiveProject::testGeoZoomConfigRequiresProyectoWhenNoProjectLoaded()
+{
+  AppSettings appSettings;
+  ActiveLayer activeLayer;
+  ActiveProject activeProject( appSettings, activeLayer, mApi->localProjectsManager() );
+  GeoZoomHelper geoZoomHelper( &activeProject );
+
+  writeCvegeoConfig( QStringLiteral( R"([{"CVEGEO":"01001","BD":"NacionalBD.gpkg","Capa":"01m"}])" ) );
+
+  QVERIFY( !geoZoomHelper.zoomFromConfiguredJson( nullptr ) );
+  QCOMPARE( geoZoomHelper.lastError(),
+            QStringLiteral( "No hay proyecto activo y el JSON no contiene la clave 'Proyecto'." ) );
+
+  QFile::remove( cvegeoConfigPath() );
+}
+
+void TestActiveProject::testGeoZoomConfigProjectLoadFailure()
+{
+  AppSettings appSettings;
+  ActiveLayer activeLayer;
+  ActiveProject activeProject( appSettings, activeLayer, mApi->localProjectsManager() );
+  GeoZoomHelper geoZoomHelper( &activeProject );
+
+  const QString missingProjectPath =
+      QDir( QStandardPaths::writableLocation( QStandardPaths::AppDataLocation ) )
+      .filePath( QStringLiteral( "missing_project.qgz" ) );
+
+  writeCvegeoConfig(
+      QStringLiteral( R"([{"Proyecto":"missing_project.qgz","CVEGEO":"01001","BD":"NacionalBD.gpkg","Capa":"01m"}])" ) );
+
+  QVERIFY( !geoZoomHelper.zoomFromConfiguredJson( nullptr ) );
+  QCOMPARE( geoZoomHelper.lastError(),
+            QStringLiteral( "No se pudo cargar el proyecto: %1" ).arg( missingProjectPath ) );
+
+  QFile::remove( cvegeoConfigPath() );
 }
