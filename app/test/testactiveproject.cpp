@@ -260,8 +260,6 @@ void TestActiveProject::testGeoZoomConfigInvalidJson()
 
   QVERIFY( !geoZoomHelper.zoomFromConfiguredJson( nullptr ) );
   QVERIFY( geoZoomHelper.lastError().startsWith( QStringLiteral( "JSON inválido:" ) ) );
-
-  QFile::remove( cvegeoConfigPath() );
 }
 
 void TestActiveProject::testGeoZoomConfigUsesLoadedProjectConfig()
@@ -295,7 +293,6 @@ void TestActiveProject::testGeoZoomConfigUsesLoadedProjectConfig()
 
   const QString id = mApi->localProjectsManager().projectId( projectPath );
   mApi->localProjectsManager().removeLocalProject( id );
-  QFile::remove( cvegeoConfigPath() );
 }
 
 void TestActiveProject::testGeoZoomConfigRequiresProyectoWhenNoProjectLoaded()
@@ -310,8 +307,6 @@ void TestActiveProject::testGeoZoomConfigRequiresProyectoWhenNoProjectLoaded()
   QVERIFY( !geoZoomHelper.zoomFromConfiguredJson( nullptr ) );
   QCOMPARE( geoZoomHelper.lastError(),
             QStringLiteral( "No hay proyecto activo y el JSON no contiene la clave 'Proyecto'." ) );
-
-  QFile::remove( cvegeoConfigPath() );
 }
 
 void TestActiveProject::testGeoZoomConfigProjectLoadFailure()
@@ -331,6 +326,4 @@ void TestActiveProject::testGeoZoomConfigProjectLoadFailure()
   QVERIFY( !geoZoomHelper.zoomFromConfiguredJson( nullptr ) );
   QCOMPARE( geoZoomHelper.lastError(),
             QStringLiteral( "No se pudo cargar el proyecto: %1" ).arg( missingProjectPath ) );
-
-  QFile::remove( cvegeoConfigPath() );
 }
