@@ -31,7 +31,7 @@ struct GeoZoomConfigEntry
     QString cvegeo;
 };
 
-QString cvegeoConfigFilePath( const QString &projectDir )
+QString projectLocalCvegeoConfigPath( const QString &projectDir )
 {
     return QDir( projectDir ).filePath( QStringLiteral( "cvegeo_config.json" ) );
 }
@@ -41,6 +41,8 @@ QString projectDirectoryFromPath( const QString &projectPath )
     return QFileInfo( projectPath ).absolutePath();
 }
 
+// Relative project paths from the config are resolved against the directory
+// that contains the JSON file. Absolute paths are used as-is.
 QString resolveProjectPath( const QString &projectPath, const QString &jsonPath )
 {
     QFileInfo projectInfo( projectPath );
@@ -163,7 +165,7 @@ bool GeoZoomHelper::zoomFromConfiguredJson( InputMapSettings *mapSettings )
     {
         const QString projectPath = mActiveProject->qgsProject()->fileName();
         projectDir = projectDirectoryFromPath( projectPath );
-        jsonPath = cvegeoConfigFilePath( projectDir );
+        jsonPath = projectLocalCvegeoConfigPath( projectDir );
 
         QString errorMsg;
         if ( !readFirstConfigEntry( jsonPath, entry, errorMsg ) )

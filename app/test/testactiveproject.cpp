@@ -29,12 +29,15 @@ QString cvegeoConfigPath()
   return QDir( appDataDir ).filePath( QStringLiteral( "cvegeo_config.json" ) );
 }
 
-void writeCvegeoConfig( const QString &content )
+bool writeCvegeoConfig( const QString &content )
 {
   QFile file( cvegeoConfigPath() );
-  QVERIFY( file.open( QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate ) );
+  if ( !file.open( QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate ) )
+    return false;
+
   file.write( content.toUtf8() );
   file.close();
+  return true;
 }
 }
 
@@ -256,7 +259,7 @@ void TestActiveProject::testGeoZoomConfigInvalidJson()
   ActiveProject activeProject( appSettings, activeLayer, mApi->localProjectsManager() );
   GeoZoomHelper geoZoomHelper( &activeProject );
 
-  writeCvegeoConfig( QStringLiteral( "{" ) );
+  QVERIFY2( writeCvegeoConfig( QStringLiteral( "{" ) ), "Failed to write test CVEGEO config" );
 
   QVERIFY( !geoZoomHelper.zoomFromConfiguredJson( nullptr ) );
   QVERIFY( geoZoomHelper.lastError().startsWith( QStringLiteral( "JSON inválido:" ) ) );
@@ -284,8 +287,9 @@ void TestActiveProject::testGeoZoomConfigUsesLoadedProjectConfig()
   localConfig.write( R"([{"BD":"NacionalBD.gpkg","Capa":"01m"}])" );
   localConfig.close();
 
-  writeCvegeoConfig(
-      QStringLiteral( R"([{"Proyecto":"missing_project.qgz","CVEGEO":"01001","BD":"NacionalBD.gpkg","Capa":"01m"}])" ) );
+  QVERIFY2( writeCvegeoConfig(
+                QStringLiteral( R"([{"Proyecto":"missing_project.qgz","CVEGEO":"01001","BD":"NacionalBD.gpkg","Capa":"01m"}])" ) ),
+            "Failed to write test CVEGEO config" );
 
   QVERIFY( !geoZoomHelper.zoomFromConfiguredJson( nullptr ) );
   QCOMPARE( geoZoomHelper.lastError(),
@@ -302,7 +306,8 @@ void TestActiveProject::testGeoZoomConfigRequiresProyectoWhenNoProjectLoaded()
   ActiveProject activeProject( appSettings, activeLayer, mApi->localProjectsManager() );
   GeoZoomHelper geoZoomHelper( &activeProject );
 
-  writeCvegeoConfig( QStringLiteral( R"([{"CVEGEO":"01001","BD":"NacionalBD.gpkg","Capa":"01m"}])" ) );
+  QVERIFY2( writeCvegeoConfig( QStringLiteral( R"([{"CVEGEO":"01001","BD":"NacionalBD.gpkg","Capa":"01m"}])" ) ),
+            "Failed to write test CVEGEO config" );
 
   QVERIFY( !geoZoomHelper.zoomFromConfiguredJson( nullptr ) );
   QCOMPARE( geoZoomHelper.lastError(),
@@ -320,8 +325,9 @@ void TestActiveProject::testGeoZoomConfigProjectLoadFailure()
       QDir( QStandardPaths::writableLocation( QStandardPaths::AppDataLocation ) )
       .filePath( QStringLiteral( "missing_project.qgz" ) );
 
-  writeCvegeoConfig(
-      QStringLiteral( R"([{"Proyecto":"missing_project.qgz","CVEGEO":"01001","BD":"NacionalBD.gpkg","Capa":"01m"}])" ) );
+  QVERIFY2( writeCvegeoConfig(
+                QStringLiteral( R"([{"Proyecto":"missing_project.qgz","CVEGEO":"01001","BD":"NacionalBD.gpkg","Capa":"01m"}])" ) ),
+            "Failed to write test CVEGEO config" );
 
   QVERIFY( !geoZoomHelper.zoomFromConfiguredJson( nullptr ) );
   QCOMPARE( geoZoomHelper.lastError(),
