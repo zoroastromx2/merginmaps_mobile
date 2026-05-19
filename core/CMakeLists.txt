@@ -59,9 +59,13 @@ else ()
   message(STATUS "Using QSettings to store credentials.")
 endif ()
 
-add_library(mm_core STATIC ${MM_CORE_SRCS} ${MM_CORE_HDRS}
+add_library(
+  mm_core STATIC
+  ${MM_CORE_SRCS}
+  ${MM_CORE_HDRS}
   dynamicdatabasemanager.h
-  dynamicdatabasemanager.cpp)
+  dynamicdatabasemanager.cpp
+)
 target_include_directories(mm_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(
   mm_core

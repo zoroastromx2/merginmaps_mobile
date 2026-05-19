@@ -7,7 +7,7 @@
  *                                                                         *
  ***************************************************************************/
 
-package uk.co.lutraconsulting;
+package mx.org.inegi;
 
 import java.text.SimpleDateFormat;
 import java.io.File;
@@ -34,8 +34,8 @@ import androidx.core.content.FileProvider;
 import android.hardware.SensorManager;
 import android.hardware.camera2.CameraManager;
 
-import uk.co.lutraconsulting.EXIFUtils;
-import uk.co.lutraconsulting.OrientationSensor;
+import mx.org.inegi.EXIFUtils;
+import mx.org.inegi.OrientationSensor;
 
 public class CameraActivity extends Activity {
     private static final String TAG = "Camera Activity";
@@ -73,7 +73,7 @@ public class CameraActivity extends Activity {
             // Continue only if the File was successfully created
             if (photoFile != null) {
                 Uri photoURI = FileProvider.getUriForFile(this,
-                        "uk.co.lutraconsulting.fileprovider",
+                        "mx.org.inegi.fileprovider",
                         photoFile);
 
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);

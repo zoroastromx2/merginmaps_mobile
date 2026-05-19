@@ -82,7 +82,7 @@ class AndroidTrackingBroadcast : public QObject
 
     explicit AndroidTrackingBroadcast( QObject *parent = nullptr )
     {
-      mBroadcastReceiver = QJniObject( "uk/co/lutraconsulting/PositionTrackingBroadcastMiddleware" );
+      mBroadcastReceiver = QJniObject( "inegi/org/mx/PositionTrackingBroadcastMiddleware" );
     }
 
     bool registerBroadcastPrivate();

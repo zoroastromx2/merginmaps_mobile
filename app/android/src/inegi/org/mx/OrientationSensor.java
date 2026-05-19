@@ -7,7 +7,7 @@
  *                                                                         *
  ***************************************************************************/
 
-package uk.co.lutraconsulting;
+package mx.org.inegi;
 
 import android.app.Activity;
 import android.hardware.Sensor;

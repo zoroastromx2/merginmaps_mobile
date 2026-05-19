@@ -3,5 +3,8 @@
     <cache-path name="input_camera" path="./" />
     <external-path
         name="app_files"
-        path="Android/data/uk.co.lutraconsulting/" />
+        path="Android/data/mx.org.inegi/" />
+    <cache-path name="cache" path="." />           <!-- ← cubre QStandardPaths::CacheLocation -->
+    <external-files-path name="external" path="." />
 </paths>
+

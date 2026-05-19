@@ -167,8 +167,8 @@ void SynchronizationManager::migrateProjectToMergin( const QString &projectName 
 qreal SynchronizationManager::syncProgress( const QString &projectFullName ) const
 {
   if ( mSyncProcesses.contains( projectFullName ) )
-  {
-    return mSyncProcesses.value( projectFullName ).progress;
+{
+  return mSyncProcesses.value( projectFullName ).progress;
   }
 
   return -1;
@@ -177,8 +177,8 @@ qreal SynchronizationManager::syncProgress( const QString &projectFullName ) con
 bool SynchronizationManager::hasPendingSync( const QString &projectFullName ) const
 {
   if ( mSyncProcesses.contains( projectFullName ) )
-  {
-    return mSyncProcesses.value( projectFullName ).pending;
+{
+  return mSyncProcesses.value( projectFullName ).pending;
   }
 
   return false;

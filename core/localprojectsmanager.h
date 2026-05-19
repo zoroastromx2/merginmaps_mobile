@@ -38,8 +38,11 @@ class LocalProjectsManager : public QObject
     LocalProject projectFromMerginName( const QString &projectFullName ) const;
     LocalProject projectFromMerginName( const QString &projectNamespace, const QString &projectName ) const;
 
-    //! Adds entry about newly created project
-    void addLocalProject( const QString &projectDir, const QString &projectName );
+    //! Adds entry about newly created project (searches for .qgs/.qgz inside projectDir)
+    Q_INVOKABLE void addLocalProject( const QString &projectDir, const QString &projectName );
+
+    //! Adds entry for a project whose exact file path is already known (avoids directory scan)
+    Q_INVOKABLE void addLocalProjectByFilePath( const QString &projectFilePath, const QString &projectName );
 
     //! Adds entry for downloaded project
     void addMerginProject( const QString &projectDir, const QString &projectNamespace, const QString &projectName );

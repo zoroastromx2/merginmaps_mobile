@@ -37,6 +37,7 @@ set(MM_QML
     components/MMBusyIndicator.qml
     components/MMMessage.qml
     components/MMNotification.qml
+    components/MMNotificationBox.qml
     components/MMNotificationView.qml
     components/MMPage.qml
     components/MMPageHeader.qml
@@ -176,6 +177,12 @@ set(MM_QML
     settings/components/MMSettingsInput.qml
     settings/components/MMSettingsItem.qml
     settings/components/MMSettingsSwitch.qml
+    tables/MMTablesController.qml
+    tables/MMDatabaseManagerPage.qml
+    tables/MMCreateDatabasePage.qml
+    tables/MMCreateTableDrawer.qml
+    tables/components/MMDatabaseInfoDrawer.qml
+    project/MMImportProjectPage.qml
     main.qml
     PARENT_SCOPE
 )

@@ -7,7 +7,7 @@
  *                                                                         *
  ***************************************************************************/
 
-package uk.co.lutraconsulting;
+package mx.org.inegi;
 
 import android.Manifest;
 import android.os.Build;
@@ -31,7 +31,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Locale;
 
-import uk.co.lutraconsulting.PositionTrackingBroadcastMiddleware;
+import mx.org.inegi.PositionTrackingBroadcastMiddleware;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -214,12 +214,12 @@ public class PositionTrackingService extends Service implements LocationListener
             long timeInterval = MIN_TIME_BW_UPDATES;
             long distanceInterval = MIN_DISTANCE_CHANGE_FOR_UPDATES;
 
-            if ( intent.hasExtra( "uk.co.lutraconsulting.tracking.timeInterval" ) ) {
-                timeInterval = (long) intent.getDoubleExtra( "uk.co.lutraconsulting.tracking.timeInterval", 1000 );
+            if ( intent.hasExtra( "mx.org.inegi.tracking.timeInterval" ) ) {
+                timeInterval = (long) intent.getDoubleExtra( "mx.org.inegi.tracking.timeInterval", 1000 );
             }
 
-            if ( intent.hasExtra( "uk.co.lutraconsulting.tracking.distanceInterval" ) ) {
-                distanceInterval = (long) intent.getDoubleExtra( "uk.co.lutraconsulting.tracking.distanceInterval", 1 );
+            if ( intent.hasExtra( "mx.org.inegi.tracking.distanceInterval" ) ) {
+                distanceInterval = (long) intent.getDoubleExtra( "mx.org.inegi.tracking.distanceInterval", 1 );
             }
 
             locationManager.requestLocationUpdates(

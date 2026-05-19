@@ -1,4 +1,4 @@
-package uk.co.lutraconsulting;
+package mx.org.inegi;
 
 import android.Manifest;
 import android.content.Context;

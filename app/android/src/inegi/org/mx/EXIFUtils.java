@@ -7,7 +7,7 @@
  *                                                                         *
  ***************************************************************************/
 
-package uk.co.lutraconsulting;
+package mx.org.inegi;
 
 import android.os.Bundle;
 import androidx.exifinterface.media.ExifInterface;

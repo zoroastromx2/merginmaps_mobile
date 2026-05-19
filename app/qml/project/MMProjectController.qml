@@ -20,6 +20,8 @@ import "../inputs"
 import "../account"
 import "../dialogs"
 
+//import "MMImportProjectPage.qml"   // ← añadir junto a los otros imports locales
+
 Item {
   id: root
 
@@ -38,7 +40,7 @@ Item {
   }
 
   function hidePanel() {
-    if ( root.activeProjectId ) {
+    if ( root.activeProjectId || __activeProject.isProjectLoaded() ) {
       root.visible = false
       stackView.clearStackAndClose()
       root.closed()
@@ -187,7 +189,8 @@ Item {
       onBackClicked: root.hidePanel()
 
       onStateChanged: {
-        __merginApi.pingMergin()
+        // INEGI: Mergin sync disabled — skip ping
+        // __merginApi.pingMergin()
         projectsPage.refreshProjectList()
 
         pageFooter.setActiveButton( projectsPage.state )
@@ -213,6 +216,7 @@ Item {
 
         width: 40 * __dp
         height: width
+        visible: false  // INEGI: Mergin login disabled
 
         anchors.verticalCenter: parent.verticalCenter
 
@@ -386,6 +390,7 @@ Item {
             text: qsTr("Projects")
             iconSource: __style.projectsIcon
             iconSourceSelected: __style.projectsFilledIcon
+            visible: false  // INEGI: Mergin workspace disabled
             onClicked: projectsPage.state = "workspace"
           }
 
@@ -395,10 +400,21 @@ Item {
             text: qsTr("Explore")
             iconSource: __style.globalIcon
             iconSourceSelected: __style.globalFilledIcon
+            visible: false  // INEGI: Mergin explore disabled
             onClicked: projectsPage.state = "explore"
+          }
+
+          MMToolbarButton {
+                  id: importLocalBtn
+
+                  text: qsTr( "Import" )
+                  iconSource: __style.folderIcon        // o el ícono que prefieras de mmstyle.h
+                  iconSourceSelected: __style.folderIcon
+                  onClicked: stackView.push( importProjectPageComp )
           }
         }
       }
+
 
       function refreshProjectList( keepSearchFilter = false ) {
         stackView.pending = true
@@ -612,6 +628,25 @@ Item {
 
       onCreateWorkspaceRequested: {
         createWorkspaceController.createNewWorkspace()
+      }
+    }
+  }
+
+  // ── Import Local Project Page ──────────────────────────────────────────────
+  Component {
+    id: importProjectPageComp
+
+    MMImportProjectPage {
+      id: importProjectPage
+
+      height: root.height
+      width: root.width
+
+      onBackClicked: stackView.popOnePageOrClose()
+
+      onOpenProjectRequested: function( projectFilePath ) {
+        stackView.clearStackAndClose()
+        root.setupProjectOpen( projectFilePath )
       }
     }
   }

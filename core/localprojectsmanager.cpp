@@ -15,6 +15,7 @@
 
 #include <QDir>
 #include <QDirIterator>
+#include <QFileInfo>
 
 LocalProjectsManager::LocalProjectsManager( const QString &dataDir )
   : mDataDir( dataDir )
@@ -54,9 +55,10 @@ void LocalProjectsManager::reloadDataDir()
 
 LocalProject LocalProjectsManager::projectFromDirectory( const QString &projectDir ) const
 {
+  const QString normalized = QDir::cleanPath( projectDir );
   for ( const LocalProject &info : mProjects )
   {
-    if ( info.projectDir == projectDir )
+    if ( QDir::cleanPath( info.projectDir ) == normalized )
       return info;
   }
   return LocalProject();
@@ -64,9 +66,10 @@ LocalProject LocalProjectsManager::projectFromDirectory( const QString &projectD
 
 LocalProject LocalProjectsManager::projectFromProjectFilePath( const QString &projectFilePath ) const
 {
+  const QString normalized = QDir::cleanPath( projectFilePath );
   for ( const LocalProject &info : mProjects )
   {
-    if ( info.qgisProjectFilePath == projectFilePath )
+    if ( QDir::cleanPath( info.qgisProjectFilePath ) == normalized )
       return info;
   }
   return LocalProject();
@@ -74,9 +77,9 @@ LocalProject LocalProjectsManager::projectFromProjectFilePath( const QString &pr
 
 LocalProject LocalProjectsManager::projectFromProjectId( const QString &projectId ) const
 {
-  for ( const LocalProject &info : mProjects )
-  {
-    if ( info.id() == projectId )
+for ( const LocalProject &info : mProjects )
+{
+  if ( info.id() == projectId )
       return info;
   }
   return LocalProject();
@@ -84,9 +87,9 @@ LocalProject LocalProjectsManager::projectFromProjectId( const QString &projectI
 
 LocalProject LocalProjectsManager::projectFromMerginName( const QString &projectFullName ) const
 {
-  for ( const LocalProject &info : mProjects )
-  {
-    if ( info.id() == projectFullName )
+for ( const LocalProject &info : mProjects )
+{
+  if ( info.id() == projectFullName )
       return info;
   }
   return LocalProject();
@@ -100,6 +103,27 @@ LocalProject LocalProjectsManager::projectFromMerginName( const QString &project
 void LocalProjectsManager::addLocalProject( const QString &projectDir, const QString &projectName )
 {
   addProject( projectDir, QString(), projectName );
+}
+
+void LocalProjectsManager::addLocalProjectByFilePath( const QString &projectFilePath, const QString &projectName )
+{
+  const QString cleanPath = QDir::cleanPath( projectFilePath );
+  const QString projectDir = QFileInfo( cleanPath ).absolutePath();
+
+  // avoid duplicates
+  for ( const LocalProject &existing : mProjects )
+  {
+    if ( QDir::cleanPath( existing.qgisProjectFilePath ) == cleanPath )
+      return;
+  }
+
+  LocalProject project;
+  project.projectDir = projectDir;
+  project.qgisProjectFilePath = cleanPath;
+  project.projectName = projectName;
+
+  mProjects << project;
+  emit localProjectAdded( project );
 }
 
 void LocalProjectsManager::addMerginProject( const QString &projectDir, const QString &projectNamespace, const QString &projectName )
@@ -125,9 +149,10 @@ void LocalProjectsManager::removeLocalProject( const QString &projectId )
 
 bool LocalProjectsManager::projectIsValid( const QString &path ) const
 {
+  const QString normalized = QDir::cleanPath( path );
   for ( int i = 0; i < mProjects.count(); ++i )
   {
-    if ( mProjects[i].qgisProjectFilePath == path )
+    if ( QDir::cleanPath( mProjects[i].qgisProjectFilePath ) == normalized )
     {
       return mProjects[i].projectError.isEmpty();
     }
@@ -137,9 +162,10 @@ bool LocalProjectsManager::projectIsValid( const QString &path ) const
 
 QString LocalProjectsManager::projectId( const QString &path ) const
 {
+  const QString normalized = QDir::cleanPath( path );
   for ( int i = 0; i < mProjects.count(); ++i )
   {
-    if ( mProjects[i].qgisProjectFilePath == path )
+    if ( QDir::cleanPath( mProjects[i].qgisProjectFilePath ) == normalized )
     {
       return mProjects[i].id();
     }

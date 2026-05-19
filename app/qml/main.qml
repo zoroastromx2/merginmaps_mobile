@@ -221,6 +221,7 @@ ApplicationWindow {
         text: qsTr("Ir a CVEGEO")
         iconSource: __style.searchIcon
         onClicked: {
+          zoomCvegeoButton.enabled = false
           __filePickerManager.openFilePicker()
         }
       }

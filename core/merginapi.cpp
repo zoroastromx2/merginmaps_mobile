@@ -124,14 +124,10 @@ MerginApi::MerginApi( LocalProjectsManager &localProjects, QObject *parent )
 #endif
 
   //
-  // check if the cache is up to date:
-  //  - server url and type
-  //  - user auth and info
-  //  - workspace info
+  // INEGI: Mergin sync disabled — skip server contact at startup
   //
-
-  getServerConfig();
-  pingMergin();
+  // getServerConfig();
+  // pingMergin();
 
   if ( mUserAuth->hasAuthData() )
   {
@@ -4408,17 +4404,17 @@ void MerginApi::reloadProjectRoleReplyFinished()
 QString MerginApi::getCachedProjectRole( const QString &projectFullName ) const
 {
   if ( projectFullName.isEmpty() )
-    return QString();
+  return QString();
 
   QString projectDir = mLocalProjects.projectFromMerginName( projectFullName ).projectDir;
 
   if ( projectDir.isEmpty() )
     return QString();
 
-  MerginProjectMetadata cachedProjectMetadata = MerginProjectMetadata::fromCachedJson( projectDir + "/" + sMetadataFile );
+    MerginProjectMetadata cachedProjectMetadata = MerginProjectMetadata::fromCachedJson( projectDir + "/" + sMetadataFile );
 
-  return cachedProjectMetadata.role;
-}
+    return cachedProjectMetadata.role;
+  }
 
 void MerginApi::startSsoFlow( const QString &clientId )
 {

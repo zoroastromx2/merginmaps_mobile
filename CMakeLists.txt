@@ -11,9 +11,9 @@ set(MM_VERSION_PATCH "2")
 
 set(APPLICATION_NAME "MDM móvil")
 set(ORGANIZATION_NAME "INEGI")
-set(ORGANIZATION_DOMAIN "inegi.org.mx")
+set(ORGANIZATION_DOMAIN "mx.org.inegi")
 
-##project(MerginMaps LANGUAGES CXX C)
+# project(MerginMaps LANGUAGES CXX C)
 
 if (VCPKG_TARGET_TRIPLET MATCHES ".*ios.*")
   set(IOS TRUE)
@@ -22,10 +22,10 @@ endif ()
 # Note: we cannot set this for non-android build, since CMake will start looking for
 # Qt6AndroidMacros.cmake
 if (ANDROID_ABI)
-  set(ANDROIDAPI "28") 
+  set(ANDROIDAPI "28")
 
-  set(ANDROID_PLATFORM "android-${ANDROIDAPI}") 
-  set(ANDROID_NDK_PLATFORM "android-${ANDROIDAPI}") 
+  set(ANDROID_PLATFORM "android-${ANDROIDAPI}")
+  set(ANDROID_NDK_PLATFORM "android-${ANDROIDAPI}")
   set(ANDROID_STL "c++_shared")
   set(ANDROID_ARM_NEON ON)
 
@@ -47,11 +47,11 @@ if (IOS)
   set(PLATFORM "OS")
   set(ENABLE_ARC FALSE)
   set(ENABLE_BITCODE FALSE)
-  set(CMAKE_OSX_DEPLOYMENT_TARGET "16.0") 
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "16.0")
 endif ()
 
 if (APPLE AND NOT IOS)
-  set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0") 
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
 endif ()
 
 # ########################################################################################
@@ -67,7 +67,7 @@ project(
   MerginMaps
   VERSION ${MM_VERSION_MAJOR}.${MM_VERSION_MINOR}.${MM_VERSION_PATCH}
   DESCRIPTION "Collect. Share. Publish."
-  HOMEPAGE_URL "https://merginmaps.com"
+  HOMEPAGE_URL "https://inegi.org.mx"
   LANGUAGES CXX
 )
 
@@ -76,22 +76,22 @@ include(FindPackageHandleStandardArgs)
 
 # 1. Manejo de MINIZIP
 find_package(unofficial-minizip CONFIG REQUIRED)
-if(TARGET unofficial::minizip::minizip AND NOT TARGET LIBKML::MINIZIP)
-    add_library(LIBKML::MINIZIP INTERFACE IMPORTED)
-    set_target_properties(LIBKML::MINIZIP PROPERTIES
-        INTERFACE_LINK_LIBRARIES "unofficial::minizip::minizip"
-    )
-endif()
+if (TARGET unofficial::minizip::minizip AND NOT TARGET LIBKML::MINIZIP)
+  add_library(LIBKML::MINIZIP INTERFACE IMPORTED)
+  set_target_properties(
+    LIBKML::MINIZIP PROPERTIES INTERFACE_LINK_LIBRARIES "unofficial::minizip::minizip"
+  )
+endif ()
 
-# 2. Manejo de URIPARSER
+# 1. Manejo de URIPARSER
 find_package(uriparser CONFIG REQUIRED)
-if(TARGET uriparser::uriparser AND NOT TARGET LIBKML::URIPARSER)
-    add_library(LIBKML::URIPARSER INTERFACE IMPORTED)
-    set_target_properties(LIBKML::URIPARSER PROPERTIES
-        INTERFACE_LINK_LIBRARIES "uriparser::uriparser"
-    )
-    message(STATUS "### Alias LIBKML::URIPARSER creado exitosamente ###")
-endif()
+if (TARGET uriparser::uriparser AND NOT TARGET LIBKML::URIPARSER)
+  add_library(LIBKML::URIPARSER INTERFACE IMPORTED)
+  set_target_properties(
+    LIBKML::URIPARSER PROPERTIES INTERFACE_LINK_LIBRARIES "uriparser::uriparser"
+  )
+  message(STATUS "### Alias LIBKML::URIPARSER creado exitosamente ###")
+endif ()
 # ---------------------------------------------------------
 
 # Forzamos el modo CONFIG para que vcpkg tome el control total
@@ -240,11 +240,11 @@ find_package(PROJ CONFIG REQUIRED)
 
 # --- BLOQUE DE PROTOBUF CORREGIDO ---
 find_package(Protobuf REQUIRED)
-if(TARGET protobuf::libprotobuf)
-    set(PROTOBUF_LIBRARIES protobuf::libprotobuf)
-else()
-    set(PROTOBUF_LIBRARIES ${Protobuf_LIBRARIES})
-endif()
+if (TARGET protobuf::libprotobuf)
+  set(PROTOBUF_LIBRARIES protobuf::libprotobuf)
+else ()
+  set(PROTOBUF_LIBRARIES ${Protobuf_LIBRARIES})
+endif ()
 message(STATUS "Librerías de Protobuf detectadas: ${PROTOBUF_LIBRARIES}")
 # ------------------------------------
 
@@ -421,11 +421,17 @@ endif ()
 # INSTALL & LINKING
 # ########################################################################################
 
-if (WIN OR LNX OR MACOS)
+if (WIN
+    OR LNX
+    OR MACOS
+)
   include(InstallStep)
 endif ()
 
 # Forzar vinculación de Protobuf a la librería principal para evitar errores de símbolos
-if(TARGET MerginMaps)
-    target_link_libraries(MerginMaps PUBLIC ${PROTOBUF_LIBRARIES})
-endif()
+if (TARGET MerginMaps)
+  target_link_libraries(MerginMaps PUBLIC ${PROTOBUF_LIBRARIES})
+endif ()
+
+# ── FilePickerManager ────────────────────────────────────────────────────────
+# target_sources( merginmaps PRIVATE filepickermanager.h filepickermanager.cpp )
