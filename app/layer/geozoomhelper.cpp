@@ -309,3 +309,62 @@ bool GeoZoomHelper::zoomToCvegeo( const QString &gpkgPath,
 
     return true;
 }
+
+// ── Zoom desde JSON seleccionado por el usuario ───────────────────────────────
+bool GeoZoomHelper::zoomFromPickedJson( const QString &jsonPath,
+                                       InputMapSettings *mapSettings )
+{
+    if ( !mActiveProject )
+    {
+        setLastError( QStringLiteral( "GeoZoomHelper: activeProject es nulo." ) );
+        return false;
+    }
+
+    GeoZoomConfigEntry entry;
+    QString errorMsg;
+    if ( !readFirstConfigEntry( jsonPath, entry, errorMsg ) )
+    {
+        setLastError( errorMsg );
+        return false;
+    }
+
+    // El directorio padre del JSON es la raíz donde viven el .gpkg y,
+    // opcionalmente, el .qgz. No se requiere configuración adicional.
+    const QString jsonDir = QFileInfo( jsonPath ).absolutePath();
+
+    // Si el JSON incluye un campo "Proyecto" y no hay proyecto activo (o es
+    // diferente al actual), se carga el proyecto.
+    if ( !entry.projectPath.isEmpty() )
+    {
+        const QString resolvedProject = resolveProjectPath( entry.projectPath, jsonPath );
+
+        // Solo cargar si el proyecto no está ya abierto
+        const bool alreadyLoaded =
+            mActiveProject->isProjectLoaded() &&
+            QFileInfo( mActiveProject->qgsProject()->fileName() ).absoluteFilePath() ==
+            QFileInfo( resolvedProject ).absoluteFilePath();
+
+        if ( !alreadyLoaded )
+        {
+            if ( !mActiveProject->load( resolvedProject ) )
+            {
+                setLastError(
+                    QStringLiteral( "No se pudo cargar el proyecto: %1" ).arg( resolvedProject ) );
+                return false;
+            }
+        }
+    }
+
+    const QString gpkgPath = QDir( jsonDir ).filePath( entry.bdFile );
+
+    if ( !zoomToCvegeo( gpkgPath, entry.layerName, entry.cvegeo, mapSettings ) )
+    {
+        setLastError( mLastError.isEmpty()
+                          ? QStringLiteral( "No se encontró CVEGEO '%1' en la capa '%2'." )
+                                .arg( entry.cvegeo, entry.layerName )
+                          : mLastError );
+        return false;
+    }
+
+    return true;
+}

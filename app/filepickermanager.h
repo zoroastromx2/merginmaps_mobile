@@ -50,7 +50,8 @@ class FilePickerManager : public QObject
 
     /// Request code used when starting the Android picker Activity
 #ifdef ANDROID
-    static constexpr int QGZ_PICKER_CODE = 110;
+    static constexpr int QGZ_PICKER_CODE  = 110;
+    static constexpr int JSON_PICKER_CODE = 111;
 #endif
 
     /**
@@ -61,6 +62,15 @@ class FilePickerManager : public QObject
      * via handleActivityResult().
      */
     Q_INVOKABLE void openFilePicker();
+
+    /**
+     * Opens the OS file picker filtered to *.json files.
+     *
+     * On Desktop the result is synchronous and jsonFileSelected() is emitted
+     * directly from this call.  On Android the result arrives asynchronously
+     * via handleActivityResult() using JSON_PICKER_CODE.
+     */
+    Q_INVOKABLE void openJsonFilePicker();
 
 #ifdef ANDROID
     void handleActivityResult( int receiverRequestCode,
@@ -82,6 +92,10 @@ class FilePickerManager : public QObject
     /// Emitted with a valid POSIX path (no "file://" prefix) when a .qgz
     /// file has been successfully selected and – on Android – copied to cache.
     void fileSelected( const QString &filePath );
+
+    /// Emitted with an absolute path when a .json file has been selected via
+    /// openJsonFilePicker().
+    void jsonFileSelected( const QString &filePath );
 
     /// Emitted when the user cancels the picker or an error occurs.
     void filePickerCancelled();

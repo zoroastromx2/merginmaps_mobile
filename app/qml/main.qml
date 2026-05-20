@@ -492,17 +492,7 @@ ApplicationWindow {
         iconSource: __style.searchIcon
 
         onClicked: {
-          zoomCvegeoButton.enabled = false
-          var ok = __geoZoomHelper.zoomFromConfiguredJson(map.mapSettings)
-
-          if (!ok) {
-            __notificationModel.addError(__geoZoomHelper.lastError)
-          } else {
-            map.centeredToGPS = false
-            stateManager.state = "map"
-          }
-
-          zoomCvegeoButton.enabled = true
+          __filePickerManager.openJsonFilePicker()
         }
       }
 
@@ -697,6 +687,18 @@ ApplicationWindow {
 
     function onExternalProjectOpened( filePath ) {
       registerAndLoad( filePath, qsTr( "Failed to open external project: " ) )
+    }
+
+    function onJsonFileSelected( filePath ) {
+      zoomCvegeoButton.enabled = false
+      var ok = __geoZoomHelper.zoomFromPickedJson( filePath, map.mapSettings )
+      if ( !ok ) {
+        __notificationModel.addError( __geoZoomHelper.lastError )
+      } else {
+        map.centeredToGPS = false
+        stateManager.state = "map"
+      }
+      zoomCvegeoButton.enabled = true
     }
   }
 

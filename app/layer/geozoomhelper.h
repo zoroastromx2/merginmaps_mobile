@@ -48,6 +48,16 @@ public:
     Q_INVOKABLE bool zoomFromConfiguredJson( InputMapSettings *mapSettings );
 
     /**
+   * Usa un archivo JSON seleccionado por el usuario.
+   * El directorio padre del JSON se usa como projectDir, y si el campo
+   * "Proyecto" está presente en el JSON, el proyecto se carga desde ahí.
+   * Así el JSON y el .gpkg pueden estar en la misma carpeta sin configuración
+   * adicional.
+   */
+    Q_INVOKABLE bool zoomFromPickedJson( const QString &jsonPath,
+                                        InputMapSettings *mapSettings );
+
+    /**
    * Búsqueda y zoom directo, sin pasar por JSON.
    */
     Q_INVOKABLE bool zoomToCvegeo( const QString &gpkgPath,

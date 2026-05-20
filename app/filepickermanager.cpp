@@ -144,13 +144,88 @@ void FilePickerManager::openFilePicker()
 #endif
 }
 
+void FilePickerManager::openJsonFilePicker()
+{
+#ifdef ANDROID
+  // ── Android: launch SAF ACTION_OPEN_DOCUMENT for JSON ────────────────────
+  const QJniObject ACTION_OPEN_DOCUMENT =
+    QJniObject::getStaticObjectField(
+      "android/content/Intent",
+      "ACTION_OPEN_DOCUMENT",
+      "Ljava/lang/String;" );
+
+  QJniObject intent(
+    "android/content/Intent",
+    "(Ljava/lang/String;)V",
+    ACTION_OPEN_DOCUMENT.object<jstring>() );
+
+  if ( !ACTION_OPEN_DOCUMENT.isValid() || !intent.isValid() )
+  {
+    emit notifyError( tr( "Cannot create JSON file picker Intent." ) );
+    return;
+  }
+
+  intent = intent.callObjectMethod(
+             "setType",
+             "(Ljava/lang/String;)Landroid/content/Intent;",
+             QJniObject::fromString( "application/json" ).object<jstring>() );
+
+  QJniEnvironment env;
+  jobjectArray mimeArray = env->NewObjectArray(
+                             2,
+                             env->FindClass( "java/lang/String" ),
+                             nullptr );
+  env->SetObjectArrayElement( mimeArray, 0, QJniObject::fromString( "application/json" ).object<jstring>() );
+  env->SetObjectArrayElement( mimeArray, 1, QJniObject::fromString( "text/plain" ).object<jstring>() );
+
+  const QJniObject EXTRA_MIME_TYPES =
+    QJniObject::getStaticObjectField(
+      "android/content/Intent",
+      "EXTRA_MIME_TYPES",
+      "Ljava/lang/String;" );
+
+  intent.callObjectMethod(
+    "putExtra",
+    "(Ljava/lang/String;[Ljava/lang/String;)Landroid/content/Intent;",
+    EXTRA_MIME_TYPES.object<jstring>(),
+    mimeArray );
+
+  env->DeleteLocalRef( mimeArray );
+
+  intent = intent.callObjectMethod(
+             "putExtra",
+             "(Ljava/lang/String;Z)Landroid/content/Intent;",
+             QJniObject::fromString( "EXTRA_LOCAL_ONLY" ).object<jstring>(),
+             true );
+
+  QtAndroidPrivate::startActivity( intent.object<jobject>(), JSON_PICKER_CODE, this );
+
+// ── Desktop (Windows, Linux, macOS) ──────────────────────────────────────────
+#else
+  const QString path = QFileDialog::getOpenFileName(
+                         nullptr,
+                         tr( "Selecciona el archivo de configuración CVEGEO" ),
+                         QString(),
+                         tr( "Archivos JSON (*.json);;Todos los archivos (*)" ) );
+
+  if ( path.isEmpty() )
+  {
+    emit filePickerCancelled();
+  }
+  else
+  {
+    emit jsonFileSelected( path );
+  }
+#endif
+}
+
 // ── Android callback ─────────────────────────────────────────────────────────
 #ifdef ANDROID
 void FilePickerManager::handleActivityResult( const int receiverRequestCode,
     const int resultCode,
     const QJniObject &data )
 {
-  if ( receiverRequestCode != QGZ_PICKER_CODE )
+  if ( receiverRequestCode != QGZ_PICKER_CODE && receiverRequestCode != JSON_PICKER_CODE )
     return;
 
   const jint RESULT_OK =
@@ -179,9 +254,6 @@ void FilePickerManager::handleActivityResult( const int receiverRequestCode,
     return;
   }
 
-  // Delegate the content:// → local-file copy to the Java Activity.
-  // importQgzFile() creates a copy inside the app's cache dir and returns
-  // the absolute path string.  QGIS / GDAL can open that path directly.
   const QJniObject activity =
     QJniObject( QNativeInterface::QAndroidApplication::context() );
 
@@ -191,6 +263,35 @@ void FilePickerManager::handleActivityResult( const int receiverRequestCode,
       "()Ljava/lang/String;" )
     .toString();
 
+  if ( receiverRequestCode == JSON_PICKER_CODE )
+  {
+    // For JSON files we just need the local path; no .qgz import needed.
+    const QString localPath =
+      activity.callObjectMethod(
+        "importQgzFile",   // reuse the generic copy helper
+        "(Landroid/net/Uri;Ljava/lang/String;)Ljava/lang/String;",
+        uri.object(),
+        QJniObject::fromString( externalProjectsDir ).object<jstring>() )
+      .toString();
+
+    if ( localPath.isEmpty() )
+    {
+      const QString msg = tr( "Could not copy the selected JSON file to the app cache." );
+      CoreUtils::log( "FilePickerManager", msg );
+      emit notifyError( msg );
+      return;
+    }
+
+    QString posixPath = localPath;
+    if ( posixPath.startsWith( "file://" ) )
+      posixPath = QUrl( posixPath ).toLocalFile();
+
+    CoreUtils::log( "FilePickerManager", "JSON imported to: " + posixPath );
+    emit jsonFileSelected( posixPath );
+    return;
+  }
+
+  // --- QGZ_PICKER_CODE path (original behaviour) ----------------------------
   const QString localPath =
     activity.callObjectMethod(
       "importQgzFile",
