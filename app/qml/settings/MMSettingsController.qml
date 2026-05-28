@@ -25,6 +25,10 @@ Item {
   signal closed()
   signal opened()
 
+  //! Retransmite la petición de selección de JSON al contexto de main.qml,
+  //! donde __filePickerManager está disponible.
+  signal selectAutoOpenJsonRequested()
+
   enum Pages { Normal, GPSConnection }
 
   function open( subpage = MMSettingsController.Pages.Normal )
@@ -75,6 +79,7 @@ Item {
       onPrivacyPolicyClicked: Qt.openUrlExternally(__inputHelp.privacyPolicyLink)
       onTermsOfServiceClicked: Qt.openUrlExternally(__inputHelp.merginTermsLink)
       onDiagnosticLogClicked: stackview.push(logPanelComponent, { "text": __inputHelp.fullLog( true ) } )
+      onSelectAutoOpenJsonRequested: root.selectAutoOpenJsonRequested()
     }
   }
 

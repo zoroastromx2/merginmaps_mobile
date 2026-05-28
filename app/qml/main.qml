@@ -78,6 +78,10 @@ ApplicationWindow {
   readonly property bool isPortraitOrientation: ( Screen.primaryOrientation === Qt.PortraitOrientation
                                                  || Screen.primaryOrientation === Qt.InvertedPortraitOrientation )
 
+  //! true mientras el JSON picker está abierto para configurar la ruta de
+  //! apertura automática (en vez del flujo de zoom manual).
+  property bool pendingAutoOpenPathSelection: false
+
   onIsPortraitOrientationChanged: recalculateSafeArea()
 
   /*
@@ -241,6 +245,12 @@ ApplicationWindow {
           window.backButtonPressed()
         }
       } )
+
+      // Apertura automática: lanzar con un pequeño delay para que el motor
+      // QML haya compuesto la escena completa antes de cargar el proyecto.
+      if ( AppSettings.autoOpenEnabled && AppSettings.autoOpenJsonPath !== "" ) {
+        autoOpenTimer.start()
+      }
     }
 /*
  Controlador del Mapa (MMMapController):
@@ -635,6 +645,14 @@ ApplicationWindow {
     onClosed: {
       stateManager.state = "map"
     }
+
+    // El usuario quiere elegir el JSON para la apertura automática:
+    // activamos el flag para que onJsonFileSelected sepa que no debe hacer zoom
+    // sino guardar la ruta elegida en AppSettings.
+    onSelectAutoOpenJsonRequested: {
+      pendingAutoOpenPathSelection = true
+      __filePickerManager.openJsonFilePicker()
+    }
   }
 
   MMProjectController {
@@ -690,6 +708,15 @@ ApplicationWindow {
     }
 
     function onJsonFileSelected( filePath ) {
+      // ── Rama 1: selección de ruta para apertura automática ─────────────────
+      if ( pendingAutoOpenPathSelection ) {
+        pendingAutoOpenPathSelection = false
+        AppSettings.autoOpenJsonPath = filePath
+        __notificationModel.addInfo( qsTr( "Archivo JSON de apertura automática configurado." ) )
+        return
+      }
+
+      // ── Rama 2: flujo manual del botón "Ir a CVEGEO" ───────────────────────
       zoomCvegeoButton.enabled = false
       var ok = __geoZoomHelper.zoomFromPickedJson( filePath, map.mapSettings )
       if ( !ok ) {
@@ -699,6 +726,98 @@ ApplicationWindow {
         stateManager.state = "map"
       }
       zoomCvegeoButton.enabled = true
+    }
+  }
+
+  // ── Apertura automática al inicio ─────────────────────────────────────────
+  //
+  // Flujo:
+  //   1. Component.onCompleted arranca autoOpenTimer con un pequeño delay para
+  //      dejar que el motor QML termine de componer la escena.
+  //   2. autoOpenFlow.run() verifica la configuración y, si todo está en orden,
+  //      carga el proyecto e instala un handler one-shot en loadingFinished.
+  //   3. onProjectLoaded() ejecuta el zoom inmediatamente tras la carga.
+
+  Timer {
+    id: autoOpenTimer
+    interval: 400    // ms — suficiente para que el mapa esté listo
+    repeat: false
+    onTriggered: autoOpenFlow.run()
+  }
+
+  QtObject {
+    id: autoOpenFlow
+
+    // Ruta del JSON activa durante el arranque automático
+    property string pendingJsonPath: ""
+
+    function run() {
+      if ( !AppSettings.autoOpenEnabled ) return
+
+      var jsonPath = AppSettings.autoOpenJsonPath
+      if ( jsonPath === "" ) {
+        __notificationModel.addWarning(
+          qsTr( "Apertura automática activada pero no hay archivo JSON configurado." ) )
+        return
+      }
+
+      // Intentar obtener la ruta del proyecto desde el JSON.
+      // parseProjectPathFromJson devuelve "" si el archivo no existe o es inválido.
+      var projectPath = __geoZoomHelper.parseProjectPathFromJson( jsonPath )
+      if ( projectPath === "" ) {
+        // Archivo ausente o JSON sin campo "Proyecto" → arranque normal silencioso.
+        // No se muestra error para no molestar al usuario en cada inicio sin conectividad.
+        return
+      }
+
+      pendingJsonPath = jsonPath
+
+      // Registrar el proyecto en el gestor local (idempotente si ya existe)
+      var lastSlash = projectPath.lastIndexOf( '/' )
+      var name = lastSlash >= 0
+                 ? projectPath.substring( lastSlash + 1 ).replace( /\.[^/.]+$/, "" )
+                 : projectPath
+      __localProjectsManager.addLocalProjectByFilePath( projectPath, name )
+
+      // Conectar handler one-shot ANTES de llamar a load() para no perder la señal
+      __activeProject.loadingFinished.connect( autoOpenFlow.onProjectLoaded )
+      __activeProject.projectReadingFailed.connect( autoOpenFlow.onProjectFailed )
+
+      if ( !__activeProject.load( projectPath ) ) {
+        // load() devolvió false inmediatamente (ruta inválida, etc.)
+        __activeProject.loadingFinished.disconnect( autoOpenFlow.onProjectLoaded )
+        __activeProject.projectReadingFailed.disconnect( autoOpenFlow.onProjectFailed )
+        __notificationModel.addError(
+          qsTr( "Apertura automática: no se pudo cargar el proyecto." ) )
+        pendingJsonPath = ""
+      }
+    }
+
+    function onProjectLoaded() {
+      __activeProject.loadingFinished.disconnect( autoOpenFlow.onProjectLoaded )
+      __activeProject.projectReadingFailed.disconnect( autoOpenFlow.onProjectFailed )
+
+      var jsonPath = pendingJsonPath
+      pendingJsonPath = ""
+
+      if ( jsonPath === "" ) return
+
+      // Zoom: reutiliza exactamente el mismo método que el botón "Ir a CVEGEO"
+      var ok = __geoZoomHelper.zoomFromPickedJson( jsonPath, map.mapSettings )
+      if ( !ok ) {
+        __notificationModel.addError( __geoZoomHelper.lastError )
+      } else {
+        map.centeredToGPS = false
+        stateManager.state = "map"
+      }
+    }
+
+    function onProjectFailed( errorMessage ) {
+      __activeProject.loadingFinished.disconnect( autoOpenFlow.onProjectLoaded )
+      __activeProject.projectReadingFailed.disconnect( autoOpenFlow.onProjectFailed )
+      pendingJsonPath = ""
+      __notificationModel.addError(
+        qsTr( "Apertura automática: error al leer el proyecto. " ) + errorMessage )
     }
   }
 

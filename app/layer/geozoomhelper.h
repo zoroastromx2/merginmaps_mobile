@@ -58,6 +58,15 @@ public:
                                         InputMapSettings *mapSettings );
 
     /**
+   * Lee el JSON e intenta resolver la ruta del proyecto (.qgz) indicada en
+   * el campo "Proyecto".  Devuelve la ruta absoluta resuelta, o una cadena
+   * vacía si el JSON no existe, no es válido o no contiene "Proyecto".
+   * Útil para que QML compruebe el estado del archivo antes del arranque
+   * automático sin desencadenar el zoom.
+   */
+    Q_INVOKABLE QString parseProjectPathFromJson( const QString &jsonPath );
+
+    /**
    * Búsqueda y zoom directo, sin pasar por JSON.
    */
     Q_INVOKABLE bool zoomToCvegeo( const QString &gpkgPath,

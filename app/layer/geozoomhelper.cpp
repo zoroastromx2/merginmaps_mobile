@@ -368,3 +368,18 @@ bool GeoZoomHelper::zoomFromPickedJson( const QString &jsonPath,
 
     return true;
 }
+
+// ── Lectura de ruta de proyecto desde JSON (sin zoom) ─────────────────────────
+QString GeoZoomHelper::parseProjectPathFromJson( const QString &jsonPath )
+{
+    GeoZoomConfigEntry entry;
+    QString errorMsg;
+
+    if ( !readFirstConfigEntry( jsonPath, entry, errorMsg ) )
+        return QString();
+
+    if ( entry.projectPath.isEmpty() )
+        return QString();
+
+    return resolveProjectPath( entry.projectPath, jsonPath );
+}

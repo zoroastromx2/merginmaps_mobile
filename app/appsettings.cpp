@@ -34,6 +34,8 @@ AppSettings::AppSettings( QObject *parent ): QObject( parent )
   const bool autolockPosition = settings.value( QStringLiteral( "autolockPosition" ), true ).toBool();
   int hapticsTypeInt = settings.value( "hapticsType", 0 ).toInt();
   const HapticsType hapticsType = static_cast<HapticsType>( hapticsTypeInt );
+  const bool autoOpenEnabled = settings.value( QStringLiteral( "autoOpenEnabled" ), false ).toBool();
+  const QString autoOpenJsonPath = settings.value( QStringLiteral( "autoOpenJsonPath" ), QString() ).toString();
 
   settings.endGroup();
 
@@ -51,6 +53,8 @@ AppSettings::AppSettings( QObject *parent ): QObject( parent )
   setIgnoreMigrateVersion( ignoreMigrateVersion );
   setAutolockPosition( autolockPosition );
   setHapticsType( hapticsType );
+  setAutoOpenEnabled( autoOpenEnabled );
+  setAutoOpenJsonPath( autoOpenJsonPath );
 }
 
 QString AppSettings::defaultLayer() const
@@ -371,4 +375,36 @@ void AppSettings::setWindowPosition( const QList<QVariant> &newWindowPosition )
   setValue( QStringLiteral( "windowPosition" ), QVariant::fromValue( newWindowPosition ) );
 
   emit windowPositionChanged();
+}
+
+// ── Apertura automática ───────────────────────────────────────────────────────
+
+bool AppSettings::autoOpenEnabled() const
+{
+  return mAutoOpenEnabled;
+}
+
+void AppSettings::setAutoOpenEnabled( bool enabled )
+{
+  if ( mAutoOpenEnabled == enabled )
+    return;
+
+  mAutoOpenEnabled = enabled;
+  setValue( QStringLiteral( "autoOpenEnabled" ), enabled );
+  emit autoOpenEnabledChanged( mAutoOpenEnabled );
+}
+
+QString AppSettings::autoOpenJsonPath() const
+{
+  return mAutoOpenJsonPath;
+}
+
+void AppSettings::setAutoOpenJsonPath( const QString &path )
+{
+  if ( mAutoOpenJsonPath == path )
+    return;
+
+  mAutoOpenJsonPath = path;
+  setValue( QStringLiteral( "autoOpenJsonPath" ), path );
+  emit autoOpenJsonPathChanged( mAutoOpenJsonPath );
 }

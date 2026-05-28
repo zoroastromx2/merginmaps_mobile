@@ -39,6 +39,10 @@ class AppSettings: public QObject
     Q_PROPERTY( QList<QVariant> windowPosition READ windowPosition WRITE setWindowPosition NOTIFY windowPositionChanged )
     Q_PROPERTY( HapticsType hapticsType READ hapticsType WRITE setHapticsType NOTIFY hapticsTypeChanged )
 
+    // ── Apertura automática ──────────────────────────────────────────────────
+    Q_PROPERTY( bool autoOpenEnabled READ autoOpenEnabled WRITE setAutoOpenEnabled NOTIFY autoOpenEnabledChanged )
+    Q_PROPERTY( QString autoOpenJsonPath READ autoOpenJsonPath WRITE setAutoOpenJsonPath NOTIFY autoOpenJsonPathChanged )
+
   public:
     // enum of haptic modes we support
     enum HapticsType
@@ -110,6 +114,13 @@ class AppSettings: public QObject
     HapticsType hapticsType() const;
     void setHapticsType( HapticsType hapticsType );
 
+    // ── Apertura automática ──────────────────────────────────────────────────
+    bool autoOpenEnabled() const;
+    void setAutoOpenEnabled( bool enabled );
+
+    QString autoOpenJsonPath() const;
+    void setAutoOpenJsonPath( const QString &path );
+
   public slots:
     void setReuseLastEnteredValues( bool reuseLastEnteredValues );
 
@@ -133,6 +144,10 @@ class AppSettings: public QObject
     void ignoreMigrateVersionChanged();
 
     void windowPositionChanged();
+
+    // ── Apertura automática ──────────────────────────────────────────────────
+    void autoOpenEnabledChanged( bool enabled );
+    void autoOpenJsonPathChanged( const QString &path );
 
   private:
     // Projects path
@@ -169,6 +184,10 @@ class AppSettings: public QObject
     QString mIgnoreMigrateVersion;
 
     HapticsType mHapticsType;
+
+    // ── Apertura automática ──────────────────────────────────────────────────
+    bool mAutoOpenEnabled = false;
+    QString mAutoOpenJsonPath;
 };
 
 #endif // APPSETTINGS_H

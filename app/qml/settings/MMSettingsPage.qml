@@ -28,6 +28,9 @@ MMPage {
   signal diagnosticLogClicked()
   signal termsOfServiceClicked()
 
+  //! Emitida cuando el usuario quiere elegir el archivo JSON de apertura automática
+  signal selectAutoOpenJsonRequested()
+
   ListModel {
     id: intervalTypeModel
 
@@ -206,6 +209,39 @@ MMPage {
 
       Item { width: 1; height: 1 }
 
+      // ── Apertura ───────────────────────────────────────────────────────────
+      Text {
+        text: qsTr("Apertura")
+        wrapMode: Text.WordWrap
+        width: parent.width
+        font: __style.h3
+        color: __style.forestColor
+      }
+
+      Item { width: 1; height: 1 }
+
+      MMSettingsComponents.MMSettingsSwitch {
+        width: parent.width
+        title: qsTr("Apertura automática")
+        description: qsTr("Al iniciar la app, carga el proyecto y hace zoom al CVEGEO indicado en el archivo JSON configurado.")
+        checked: AppSettings.autoOpenEnabled
+
+        onClicked: AppSettings.autoOpenEnabled = !checked
+      }
+
+      MMLine {}
+
+      MMSettingsComponents.MMSettingsItem {
+        width: parent.width
+        title: qsTr("Archivo JSON de configuración")
+        value: AppSettings.autoOpenJsonPath !== "" ? AppSettings.autoOpenJsonPath : qsTr("(ninguno seleccionado)")
+
+        onClicked: root.selectAutoOpenJsonRequested()
+      }
+
+      Item { width: 1; height: 1 }
+
+      // ── General ────────────────────────────────────────────────────────────
       Text {
         text: qsTr("General")
         wrapMode: Text.WordWrap
