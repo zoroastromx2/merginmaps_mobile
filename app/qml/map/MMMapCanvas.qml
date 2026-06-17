@@ -113,6 +113,8 @@ Item {
 
     freeze: false
 
+    incrementalRendering: true // para que se vaya pintando conforme se va cargando
+
     QtObject {
       id: rendererPrivate
 
