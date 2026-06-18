@@ -29,6 +29,17 @@ Item {
     sourceSize.width: width
   }
 
+  // Spinner animado debajo del logo
+  BusyIndicator {
+    id: spinner
+    anchors.top: logo.bottom
+    anchors.topMargin: 20 * __dp
+    anchors.horizontalCenter: parent.horizontalCenter
+    width: 36 * __dp
+    height: width
+    running: root.visible
+    }
+
   Text {
     text: qsTr("Opening project ...")
     anchors.bottom: root.bottom
