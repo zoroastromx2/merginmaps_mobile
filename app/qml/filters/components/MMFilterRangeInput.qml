@@ -102,7 +102,7 @@ Column {
         } else if ( !isNaN( valueTo ) ) {
           newValues[1] = valueTo
         } else {
-          return  // partial input: same reason 
+          return // partial input: same reason
         }
       }
 
