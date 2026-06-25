@@ -32,8 +32,10 @@ set(MM_SRCS
     ios/iosutils.cpp
     position/providers/abstractpositionprovider.cpp
     position/providers/internalpositionprovider.cpp
+    position/providers/networkpositionprovider.cpp
     position/providers/positionprovidersmodel.cpp
     position/providers/simulatedpositionprovider.cpp
+    position/providers/nmeaparser.cpp
     position/tracking/abstracttrackingbackend.cpp
     position/tracking/internaltrackingbackend.cpp
     position/tracking/positiontrackinghighlight.cpp
@@ -56,6 +58,10 @@ set(MM_SRCS
     featurelayerpair.cpp
     featuresmodel.cpp
     fieldsmodel.cpp
+    filter/uniquevaluesfiltermodel.cpp
+    filter/valuemapfiltermodel.cpp
+    filter/searchproxymodel.cpp
+    filter/filtercontroller.cpp
     guidelinecontroller.cpp
     hapticsmodel.cpp
     identifykit.cpp
@@ -86,6 +92,7 @@ set(MM_SRCS
     streamingintervaltype.cpp
     synchronizationerror.cpp
     synchronizationmanager.cpp
+    valuerelationcontroller.cpp
     valuerelationfeaturesmodel.cpp
     variablesmanager.cpp
     workspacesmodel.cpp
@@ -123,8 +130,10 @@ set(MM_HDRS
     ios/iosutils.h
     position/providers/abstractpositionprovider.h
     position/providers/internalpositionprovider.h
+    position/providers/networkpositionprovider.h
     position/providers/positionprovidersmodel.h
     position/providers/simulatedpositionprovider.h
+    position/providers/nmeaparser.h
     position/tracking/abstracttrackingbackend.h
     position/tracking/internaltrackingbackend.h
     position/tracking/positiontrackinghighlight.h
@@ -148,6 +157,10 @@ set(MM_HDRS
     featurelayerpair.h
     featuresmodel.h
     fieldsmodel.h
+    filter/uniquevaluesfiltermodel.h
+    filter/valuemapfiltermodel.h
+    filter/searchproxymodel.h
+    filter/filtercontroller.h
     guidelinecontroller.h
     hapticsmodel.h
     identifykit.h
@@ -178,11 +191,13 @@ set(MM_HDRS
     synchronizationerror.h
     synchronizationmanager.h
     synchronizationoptions.h
+    valuerelationcontroller.h
     valuerelationfeaturesmodel.h
     variablesmanager.h
     workspacesmodel.h
     workspacesproxymodel.h
     mmstyle.h
+    mmtypeutils.h
     dbmanager.h
 )
 
@@ -221,6 +236,7 @@ if (ENABLE_TESTS)
       test/testactiveproject.cpp
       test/testprojectchecksumcache.cpp
       test/testmultieditmanager.cpp
+      test/testfiltercontroller.cpp
   )
 
   set(MM_HDRS
@@ -247,6 +263,7 @@ if (ENABLE_TESTS)
       test/testactiveproject.h
       test/testprojectchecksumcache.h
       test/testmultieditmanager.h
+      test/testfiltercontroller.h
   )
 
   if (NOT USE_MM_SERVER_API_KEY)
@@ -323,10 +340,12 @@ target_include_directories(
   MerginMaps
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/
          ${CMAKE_CURRENT_SOURCE_DIR}/attributes
+         ${CMAKE_CURRENT_SOURCE_DIR}/filter
          ${CMAKE_CURRENT_SOURCE_DIR}/map
          ${CMAKE_CURRENT_SOURCE_DIR}/layer
          ${CMAKE_CURRENT_SOURCE_DIR}/maptools
          ${CMAKE_CURRENT_SOURCE_DIR}/position
+         ${CMAKE_CURRENT_SOURCE_DIR}/position/providers
 )
 
 qt_policy(SET QTP0002 NEW)
@@ -435,7 +454,7 @@ if (IOS)
       PROPERTIES XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER
                  "LutraConsultingLtd.Input.AppStore"
                  XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY
-                 "iPhone Distribution: LUTRA CONSULTING LIMITED (79QMH2QRAH)"
+                 "Apple Distribution: LUTRA CONSULTING LIMITED (79QMH2QRAH)"
                  XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual"
     )
     message(STATUS "Using manual code sign with production certificate")
@@ -479,6 +498,10 @@ target_link_libraries(
          Qt6::Multimedia
          Qt6::Widgets
 )
+
+if (ANDROID)
+  target_link_libraries(MerginMaps PRIVATE Qt6::CorePrivate)
+endif ()
 
 if (HAVE_BLUETOOTH)
   target_link_libraries(MerginMaps PUBLIC Qt6::Bluetooth)
@@ -560,6 +583,21 @@ endif ()
 
 if (IOS OR MACOS)
   target_link_libraries(MerginMaps PUBLIC Tasn1::Tasn1)
+endif ()
+
+if (IOS)
+  # GDAL's gets compiled with the iOS SDK's iconv.h, so it references
+  # _iconv/_iconv_open/_iconv_close. Vcpkg's Iconv::Iconv resolves to libiconv.a which
+  # only exports _libiconv* (GNU names). Link the system libiconv.tbd explicitly so the
+  # linker can find the BSD-named symbols.
+  execute_process(
+    COMMAND xcrun --sdk iphoneos --show-sdk-path
+    OUTPUT_VARIABLE MM_IOS_SDK_PATH
+    OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET
+  )
+  if (MM_IOS_SDK_PATH AND EXISTS "${MM_IOS_SDK_PATH}/usr/lib/libiconv.tbd")
+    target_link_libraries(MerginMaps PRIVATE "${MM_IOS_SDK_PATH}/usr/lib/libiconv.tbd")
+  endif ()
 endif ()
 
 if (ANDROID)
