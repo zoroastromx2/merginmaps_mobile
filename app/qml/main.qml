@@ -1740,28 +1740,7 @@ ApplicationWindow {
   }
 
   function recalculateSafeArea() {
-    let safeArea = []
-
-    // Should be merged in future with the same code in main.cpp
-    if ( Qt.platform.os === "ios" ) {
-      safeArea = Array.from( __iosUtils.getSafeArea() )
-    }
-    else if ( Qt.platform.os === "android" ) {
-      safeArea = Array.from( __androidUtils.getSafeArea() )
-
-      // Values from Android API must be divided by dpr
-      safeArea[0] = safeArea[0] / Screen.devicePixelRatio
-      safeArea[1] = safeArea[1] / Screen.devicePixelRatio
-      safeArea[2] = safeArea[2] / Screen.devicePixelRatio
-      safeArea[3] = safeArea[3] / Screen.devicePixelRatio
-    }
-
-    if ( safeArea.length === 4 ) {
-      __style.safeAreaTop = safeArea[0]
-      __style.safeAreaRight = safeArea[1]
-      __style.safeAreaBottom = safeArea[2]
-      __style.safeAreaLeft = safeArea[3]
-    }
+    // Handled from C++ via QWindow::safeAreaMargins().
   }
 
   function storeWindowPosition() {

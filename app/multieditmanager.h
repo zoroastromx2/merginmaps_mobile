@@ -11,6 +11,7 @@
 #define MULTIEDITMANAGER_H
 
 #include <QObject>
+#include <qgsgeometry.h>
 
 #include "featurelayerpair.h"
 #include "staticfeaturesmodel.h"

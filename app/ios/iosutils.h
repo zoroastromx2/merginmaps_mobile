@@ -40,7 +40,6 @@ class IosUtils: public QObject
     IOSImagePicker *imagePicker() const;
     static QString readExif( const QString &filepath, const QString &tag );
 
-    Q_INVOKABLE QVector<int> getSafeArea();
 
     Q_INVOKABLE static bool openFile( const QString &filePath );
 
@@ -68,7 +67,6 @@ class IosUtils: public QObject
      */
     void setIdleTimerDisabled();
 
-    QVector<int> getSafeAreaImpl();
 
     static QString getManufacturerImpl();
     static QString getDeviceModelImpl();

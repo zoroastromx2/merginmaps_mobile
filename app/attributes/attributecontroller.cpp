@@ -129,13 +129,37 @@ void AttributeController::prefillRelationReferenceField()
   {
     QVariant foreignKey = mParentController->featureLayerPair().feature().attribute( fieldPair.referencedField() );
     QString referencingField = fieldPair.referencingField();
-    const QgsVectorLayer *childLayer = mLinkedRelation.referencingLayer();
-    if ( childLayer )
+
+    std::shared_ptr<FormItem> formItem;
+    for ( const auto &item : mFormItems )
     {
-      const int fieldIndex = childLayer->fields().lookupField( referencingField );
-      if ( fieldIndex != -1 )
+      if ( item->field().name() == referencingField )
       {
-        mFeatureLayerPair.featureRef().setAttribute( fieldIndex, foreignKey );
+        formItem = item;
+        break;
+      }
+    }
+
+    if ( formItem )
+    {
+      //if the field is in the form, setFormValue updates both the feature attribute and UI
+      setFormValue( formItem->id(), foreignKey );
+    }
+    else
+    {
+      // if the field is not displayed in the form, then set the attribute directly on the feature
+      const QgsVectorLayer *childLayer = mLinkedRelation.referencingLayer();
+      if ( childLayer )
+      {
+        const int fieldIndex = childLayer->fields().lookupField( referencingField );
+        if ( fieldIndex != -1 )
+          mFeatureLayerPair.featureRef().setAttribute( fieldIndex, foreignKey );
+        else
+          CoreUtils::log( "Attribute Controller - Relations", QStringLiteral( "Could not find field index for field %1" ).arg( referencingField ) );
+      }
+      else
+      {
+        CoreUtils::log( "Attribute Controller - Relations", QStringLiteral( "Invalid child layer for relation %1" ).arg( mLinkedRelation.name() ) );
       }
     }
   }
@@ -859,6 +883,10 @@ void AttributeController::recalculateDerivedItems( bool isFormValueChange, bool 
   // Create context
   QgsFields fields = mFeatureLayerPair.feature().fields();
   QgsExpressionContext expressionContext = layer->createExpressionContext();
+  if ( mParentController )
+  {
+    expressionContext << QgsExpressionContextUtils::parentFormScope( mParentController->featureLayerPair().feature() );
+  }
   expressionContext << QgsExpressionContextUtils::formScope( mFeatureLayerPair.feature() );
   if ( mVariablesManager )
     expressionContext << mVariablesManager->positionScope();
@@ -876,7 +904,7 @@ void AttributeController::recalculateDerivedItems( bool isFormValueChange, bool 
   // Evaluate HTML and Text element expressions
   recalculateRichTextWidgets( changedFormItems, expressionContext );
 
-  // Evaluate tab items visiblity
+  // Evaluate tab items visibility
   {
     QVector<std::shared_ptr<TabItem>>::iterator tabItemsIterator = mTabItems.begin();
     while ( tabItemsIterator != mTabItems.end() )
@@ -1608,7 +1636,8 @@ void AttributeController::renamePhotos()
           continue;
         }
 
-        const QString targetDir = InputUtils::resolveTargetDir( QgsProject::instance()->homePath(), config, mFeatureLayerPair, QgsProject::instance() );
+        const FeatureLayerPair parentPair = mParentController ? mParentController->featureLayerPair() : FeatureLayerPair();
+        const QString targetDir = InputUtils::resolveTargetDir( QgsProject::instance()->homePath(), config, mFeatureLayerPair, parentPair, QgsProject::instance() );
         const QString prefix = InputUtils::resolvePrefixForRelativePath( config[ QStringLiteral( "RelativeStorage" ) ].toInt(), QgsProject::instance()->homePath(), targetDir );
         const QString src = InputUtils::getAbsolutePath( mFeatureLayerPair.feature().attribute( item->fieldIndex() ).toString(), prefix );
         QString newName = val.toString();
@@ -1651,7 +1680,8 @@ void AttributeController::saveSketches()
       if ( item->rawValue().isValid() )
       {
         const QVariantMap config = item->editorWidgetConfig();
-        const QString targetDir = InputUtils::resolveTargetDir( QgsProject::instance()->homePath(), config, mFeatureLayerPair, QgsProject::instance() );
+        const FeatureLayerPair &parentPair = mParentController ? mParentController->featureLayerPair() : FeatureLayerPair();
+        const QString targetDir = InputUtils::resolveTargetDir( QgsProject::instance()->homePath(), config, mFeatureLayerPair, parentPair, QgsProject::instance() );
         const QString prefix = InputUtils::resolvePrefixForRelativePath( config[ QStringLiteral( "RelativeStorage" ) ].toInt(), QgsProject::instance()->homePath(), targetDir );
         const QString src = InputUtils::getAbsolutePath( mFeatureLayerPair.feature().attribute( item->fieldIndex() ).toString(), prefix );
 

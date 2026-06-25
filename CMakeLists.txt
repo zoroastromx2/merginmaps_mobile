@@ -6,8 +6,8 @@ cmake_minimum_required(VERSION 3.22)
 
 # Note: To update version use script/update_all_versions.bash
 set(MM_VERSION_MAJOR "2026")
-set(MM_VERSION_MINOR "1")
-set(MM_VERSION_PATCH "2")
+set(MM_VERSION_MINOR "3")
+set(MM_VERSION_PATCH "0")
 
 set(APPLICATION_NAME "MDM móvil")
 set(ORGANIZATION_NAME "INEGI")
@@ -30,7 +30,7 @@ if (ANDROID_ABI)
   set(ANDROID_ARM_NEON ON)
 
   # Target/Minimum API levels for Android, used as MerginMaps target properties
-  set(MM_ANDROID_TARGET_SDK_VERSION "35")
+  set(MM_ANDROID_TARGET_SDK_VERSION "36")
   set(MM_ANDROID_MIN_SDK_VERSION "${ANDROIDAPI}")
   set(MM_ANDROID_NDK_PATH "$ENV{ANDROID_NDK_HOME}")
   if (NOT MM_ANDROID_NDK_PATH)
@@ -179,6 +179,13 @@ set(MM_VERSION_CODE
     CACHE STRING "Build version (for stores)"
 )
 
+if (DEFINED SQUISH_PATH)
+  set(SquishQtBuiltinHook_ROOT
+      ${SQUISH_PATH}
+      CACHE PATH "Path to directory with Squish hook and libraries"
+  )
+endif ()
+
 mm_detect_version()
 message(STATUS "MDM Móvil ${version_desc} - ${platform_desc}")
 
@@ -207,9 +214,18 @@ find_package(
 )
 
 if (ANDROID)
-  get_filename_component(
-    QT_ANDROID_PATH_CMAKE_DIR_${ANDROID_ABI} "${Qt6_DIR}/.." ABSOLUTE
+  # Android requires access to private headers for AndroidUtils
+  find_package(
+    Qt6
+    COMPONENTS CorePrivate
+    REQUIRED
   )
+
+  # Qt by default assumes that cmake files live in `lib/cmake`. Point to `share` instead.
+  # See
+  # https://github.com/qt/qtbase/blob/7ddbc87d8e14ce51d2957ea72d0a6077593d5ff4/src/corelib/Qt6AndroidMacros.cmake#L1281-L1296
+  cmake_path(SET QT_ANDROID_PATH_CMAKE_DIR_${ANDROID_ABI} "${Qt6_DIR}/..")
+  cmake_path(ABSOLUTE_PATH QT_ANDROID_PATH_CMAKE_DIR_${ANDROID_ABI} NORMALIZE)
   message(
     STATUS
       "QT_ANDROID_PATH_CMAKE_DIR_${ANDROID_ABI}: ${QT_ANDROID_PATH_CMAKE_DIR_${ANDROID_ABI}}"
