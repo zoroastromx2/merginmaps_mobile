@@ -84,11 +84,11 @@ Column {
       } else {
         const valueFrom = parseFloat( fromText )
         if ( !isNaN( valueFrom ) && fromText.endsWith('.') ) {
-          return  // float number with unfinished decimal part
+          return // float number with unfinished decimal part
         } else if ( !isNaN( valueFrom ) ) {
           newValues[0] = valueFrom
         } else {
-          return  // partial input, such as "-"
+          return // partial input, such as "-"
         }
       }
 
@@ -98,7 +98,7 @@ Column {
       } else {
         const valueTo = parseFloat( toText )
         if ( !isNaN( valueTo ) && toText.endsWith('.') ) {
-          return  // float number with unfinished decimal part
+          return // float number with unfinished decimal part
         } else if ( !isNaN( valueTo ) ) {
           newValues[1] = valueTo
         } else {

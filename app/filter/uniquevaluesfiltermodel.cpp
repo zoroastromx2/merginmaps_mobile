@@ -133,8 +133,8 @@ QVariantList UniqueValuesFilterModel::loadUniqueValues( QgsVectorLayer *layer, i
   QSet<QVariant> uniqueValues = l->uniqueValues( fieldIndex, 1000000 );
 
   // both empty string and null value show up in the same way, let's remove one to have only one "No value" option in UI
-  const QVariant nullValidQVariant = QVariant( QMetaType( QMetaType::QString ) );
-  if ( uniqueValues.contains( QVariant( "" ) ) && uniqueValues.contains( nullValidQVariant ) )
+  const QVariant nullStringVariant = QVariant( QMetaType( QMetaType::QString ) );
+  if ( uniqueValues.contains( QVariant( "" ) ) && uniqueValues.contains( nullStringVariant ) )
   {
     uniqueValues.remove( QVariant( "" ) );
   }
