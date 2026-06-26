@@ -10,10 +10,13 @@
 #ifndef FIELDSMODEL_H
 #define FIELDSMODEL_H
 
+#include <QObject>
 #include <QAbstractListModel>
-#include <QtQml/qqmlregistration.h>
+#include <QVector>
+#include <QMap>
 
-#include <qgsfield.h>
+#include "qgsfield.h"
+#include "qgsfields.h"
 
 struct FieldConfiguration
 {
@@ -25,18 +28,18 @@ struct FieldConfiguration
 class FieldsModel: public QAbstractListModel
 {
     Q_OBJECT
-    QML_ELEMENT
-
   public:
     /**
      * Feature roles enum.
      */
+    Q_ENUMS( FeatureRoles )
+
+    //! Feature roles
     enum FeatureRoles
     {
       AttributeName = Qt::UserRole + 1,  //!< Attribute's display name (the original field name)
       WidgetType,  //!< Widget type name. Should match QT/QML editor widgets names.
     };
-    Q_ENUM( FeatureRoles )
 
     //! Creates a new fields model
     explicit FieldsModel( QObject *parent = nullptr );
@@ -59,7 +62,7 @@ class FieldsModel: public QAbstractListModel
     QList<FieldConfiguration> mFields;
 
 
-    bool contains( const QString &name ) const;
+    bool contains( const QString &name );
 };
 
 #endif // FIELDSMODEL_H

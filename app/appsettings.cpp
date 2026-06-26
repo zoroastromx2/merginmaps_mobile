@@ -10,7 +10,6 @@
 #include "appsettings.h"
 #include "coreutils.h"
 
-#include <cmath>
 #include <QSettings>
 #include <QFileInfo>
 
@@ -220,7 +219,6 @@ QVariantList AppSettings::savedPositionProviders() const
     QStringList provider;
     provider << settings.value( "providerName" ).toString();
     provider << settings.value( "providerAddress" ).toString();
-    provider << settings.value( "providerType" ).toString();
     providers.push_back( provider );
   }
 
@@ -244,16 +242,15 @@ void AppSettings::savePositionProviders( const QVariantList &providers )
   {
     QVariantList provider = providers[i].toList();
 
-    if ( provider.length() < 3 )
+    if ( provider.length() < 2 )
     {
       CoreUtils::log( QStringLiteral( "AppSettings" ), QStringLiteral( "Tried to save provider without sufficient data" ) );
       continue;
     }
     settings.setArrayIndex( i );
 
-    settings.setValue( "providerName", provider[0] );
-    settings.setValue( "providerAddress", provider[1] );
-    settings.setValue( "providerType", provider[2] );
+    settings.setValue( "providerName", providers[i].toList()[0] );
+    settings.setValue( "providerAddress", providers[i].toList()[1] );
   }
   settings.endArray();
 }
@@ -323,7 +320,7 @@ void AppSettings::setHapticsType( const HapticsType hapticsType )
 
 double AppSettings::gpsAntennaHeight() const
 {
-  return std::round( mGpsAntennaHeight / 0.001 ) * 0.001;
+  return mGpsAntennaHeight;
 }
 
 void AppSettings::setGpsAntennaHeight( const double gpsAntennaHeight )

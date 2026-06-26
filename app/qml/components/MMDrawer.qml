@@ -33,10 +33,6 @@ Drawer {
 
   edge: Qt.BottomEdge
   dragMargin: 0
-  topPadding: 0
-  bottomPadding: 0
-  leftPadding: 0
-  rightPadding: 0
 
   // rounded background
   background: Rectangle {

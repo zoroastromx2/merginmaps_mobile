@@ -20,13 +20,14 @@ on:
       - published
 
 env:
-  CMAKE_VERSION: '4.3.2'
+  CMAKE_VERSION: '3.31.6'
   VCPKG_BINARY_SOURCES: 'clear;nuget,GitHub,readwrite'
   VCPKG_ROOT: '${{ github.workspace }}/vcpkg'
-  XC_VERSION: ${{ '26.4.1' }}
+  XC_VERSION: ${{ '16.4' }}
+  DEPLOYMENT_TARGET: '14.0'
   TRIPLET: arm64-ios
   IOS_PROVISIONING_PROFILE_UUID: 59aaa8d7-516a-4592-8c58-d7d1c1f81610
-  KEYCHAIN: ${{ 'mmapp.keychain' }}
+  KEYCHAIN: ${{ 'inputapp.keychain' }}
 
 concurrency:
   group: ci-${{github.ref}}-ios
@@ -35,7 +36,7 @@ concurrency:
 jobs:
   ios_build:
     if: ( github.repository == 'MerginMaps/mobile' ) && (!contains(github.event.head_commit.message, 'Translate '))
-    runs-on: macos-26
+    runs-on: macos-15
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -56,7 +57,7 @@ jobs:
           cmakeVersion: ${{ env.CMAKE_VERSION }}
 
       - name: Setup XCode
-        uses: maxim-lobanov/setup-xcode@v1.7.0
+        uses: maxim-lobanov/setup-xcode@v1.6.0
         with:
           xcode-version: ${{ env.XC_VERSION }}
 
@@ -162,6 +163,7 @@ jobs:
             -D CMAKE_CXX_VISIBILITY_PRESET=hidden \
             -D CMAKE_SYSTEM_NAME=iOS \
             -D CMAKE_SYSTEM_PROCESSOR=aarch64 \
+            -D CMAKE_OSX_DEPLOYMENT_TARGET=${{ env.DEPLOYMENT_TARGET }} \
             -DIOS=TRUE \
             -DUSE_MM_SERVER_API_KEY=TRUE \
             -DUSE_KEYCHAIN=No \

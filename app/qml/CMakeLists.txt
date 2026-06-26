@@ -29,7 +29,6 @@ set(MM_QML
     components/MMInfoBox.qml
     components/MMLine.qml
     components/MMListDelegate.qml
-    components/MMListEmptyLoaderDelegate.qml
     components/MMListDrawer.qml
     components/MMListFooterSpacer.qml
     components/MMListMultiselectDrawer.qml
@@ -50,7 +49,6 @@ set(MM_QML
     components/MMRadioButton.qml
     components/MMRoundButton.qml
     components/MMScrollView.qml
-    components/MMSegmentControl.qml
     components/MMShadow.qml
     components/MMSwitch.qml
     components/MMText.qml
@@ -85,14 +83,6 @@ set(MM_QML
     dialogs/MMProviderRemoveReceiverDialog.qml
     dialogs/MMSsoExpiredTokenDialog.qml
     dialogs/components/MMDialogAdditionalText.qml
-    filters/MMFiltersDrawer.qml
-    filters/components/MMFilterBoolInput.qml
-    filters/components/MMFilterDateInput.qml
-    filters/components/MMFilterDropdownUniqueValuesInput.qml
-    filters/components/MMFilterDropdownValueMapInput.qml
-    filters/components/MMFilterDropdownValueRelationInput.qml
-    filters/components/MMFilterRangeInput.qml
-    filters/components/MMFilterTextInput.qml
     form/MMFormPage.qml
     form/MMFormStackController.qml
     form/MMFormController.qml
@@ -131,12 +121,8 @@ set(MM_QML
     form/editors/MMFormValueRelationEditor.qml
     gps/MMAddPositionProviderDrawer.qml
     gps/MMBluetoothConnectionDrawer.qml
-    gps/MMBluetoothProviderDrawer.qml
-    gps/MMExternalProviderConnectionDrawer.qml
     gps/MMGpsDataDrawer.qml
-    gps/MMNetworkProviderDrawer.qml
     gps/MMPositionProviderPage.qml
-    gps/MMProviderTypeDrawer.qml
     gps/MMStakeoutDrawer.qml
     gps/MMMeasureDrawer.qml
     gps/MMSelectionDrawer.qml

@@ -1,21 +1,13 @@
-/***************************************************************************
-*                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-
 #include "fieldsmodel.h"
+#include <QtDebug>
 
 FieldsModel::FieldsModel( QObject *parent )
   : QAbstractListModel( parent )
 {
   // fill the model with initial data
-  addField( tr( "Date" ), "DateTime" );
-  addField( tr( "Notes" ), "TextEdit" );
-  addField( tr( "Photo" ), "ExternalResource" );
+  addField( "Date", "DateTime" );
+  addField( "Notes", "TextEdit" );
+  addField( "Photo", "ExternalResource" );
 }
 
 bool FieldsModel::addField( const QString &name, const QString &widgetType )
@@ -44,13 +36,13 @@ bool FieldsModel::addField( const QString &name, const QString &widgetType )
   return true;
 }
 
-bool FieldsModel::removeField( const int rowIndex )
+bool FieldsModel::removeField( int row )
 {
-  if ( rowIndex < 0 || rowIndex >= mFields.count() )
+  if ( row < 0 || row >= mFields.count() )
     return false;
 
   beginResetModel();
-  mFields.removeAt( rowIndex );
+  mFields.removeAt( row );
   endResetModel();
   return true;
 }
@@ -63,8 +55,8 @@ QList<FieldConfiguration> FieldsModel::fields() const
 QHash<int, QByteArray> FieldsModel::roleNames() const
 {
   QHash<int, QByteArray> roles = QAbstractListModel::roleNames();
-  roles[AttributeName]  = QByteArrayLiteral( "attributeName" );
-  roles[WidgetType]  = QByteArrayLiteral( "widgetType" );
+  roles[AttributeName]  = QByteArrayLiteral( "AttributeName" );
+  roles[WidgetType]  = QByteArrayLiteral( "WidgetType" );
 
   return roles;
 }
@@ -73,12 +65,12 @@ QHash<int, QByteArray> FieldsModel::roleNames() const
 int FieldsModel::rowCount( const QModelIndex &parent ) const
 {
   Q_UNUSED( parent );
-  return static_cast<int>( mFields.count() );
+  return mFields.count();
 }
 
-QVariant FieldsModel::data( const QModelIndex &index, const int role ) const
+QVariant FieldsModel::data( const QModelIndex &index, int role ) const
 {
-  const int row = index.row();
+  int row = index.row();
   if ( row < 0 || row >= mFields.count() )
     return QVariant();
 
@@ -88,21 +80,22 @@ QVariant FieldsModel::data( const QModelIndex &index, const int role ) const
   {
     case AttributeName:
       return field.attributeName;
+      break;
 
     case WidgetType:
       return field.widgetType;
-
-    default:
-      return QVariant();
+      break;
   }
+
+  return QVariant();
 }
 
-bool FieldsModel::setData( const QModelIndex &index, const QVariant &value, const int role )
+bool FieldsModel::setData( const QModelIndex &index, const QVariant &value, int role )
 {
   if ( data( index, role ) == value )
     return true;
 
-  const int row = index.row();
+  int row = index.row();
   if ( row < 0 || row >= mFields.count() )
     return false;
 
@@ -118,20 +111,18 @@ bool FieldsModel::setData( const QModelIndex &index, const QVariant &value, cons
       emit dataChanged( index, index, {AttributeName} );
       return true;
     }
-
     case WidgetType:
     {
       mFields[row].widgetType = value.toString();
       emit dataChanged( index, index, {WidgetType} );
       return true;
     }
-
-    default:
-      return false;
   }
+
+  return false;
 }
 
-bool FieldsModel::contains( const QString &name ) const
+bool FieldsModel::contains( const QString &name )
 {
   for ( int i = 0; i < mFields.count(); ++i )
   {

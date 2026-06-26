@@ -113,7 +113,6 @@ class MMStyle: public QObject
     Q_PROPERTY( QUrl arrowLinkRightIcon READ arrowLinkRightIcon CONSTANT )
     Q_PROPERTY( QUrl arrowUpIcon READ arrowUpIcon CONSTANT )
     Q_PROPERTY( QUrl backIcon READ backIcon CONSTANT )
-    Q_PROPERTY( QUrl bluetoothIcon READ bluetoothIcon CONSTANT )
     Q_PROPERTY( QUrl briefcaseIcon READ briefcaseIcon CONSTANT )
     Q_PROPERTY( QUrl calendarIcon READ calendarIcon CONSTANT )
     Q_PROPERTY( QUrl checkmarkIcon READ checkmarkIcon CONSTANT )
@@ -128,7 +127,6 @@ class MMStyle: public QObject
     Q_PROPERTY( QUrl eraserIcon READ eraserIcon CONSTANT )
     Q_PROPERTY( QUrl facebookIcon READ facebookIcon CONSTANT )
     Q_PROPERTY( QUrl featuresIcon READ featuresIcon CONSTANT )
-    Q_PROPERTY( QUrl filterIcon READ filterIcon CONSTANT )
     Q_PROPERTY( QUrl globeIcon READ globeIcon CONSTANT )
     Q_PROPERTY( QUrl globalIcon READ globalIcon CONSTANT )
     Q_PROPERTY( QUrl gpsIcon READ gpsIcon CONSTANT )
@@ -146,7 +144,6 @@ class MMStyle: public QObject
     Q_PROPERTY( QUrl mouthIcon READ mouthIcon CONSTANT )
     Q_PROPERTY( QUrl naturalResourcesIcon READ naturalResourcesIcon CONSTANT )
     Q_PROPERTY( QUrl nextIcon READ nextIcon CONSTANT )
-    Q_PROPERTY( QUrl networkIcon READ networkIcon CONSTANT )
     Q_PROPERTY( QUrl otherIcon READ otherIcon CONSTANT )
     Q_PROPERTY( QUrl othersIcon READ othersIcon CONSTANT )
     Q_PROPERTY( QUrl plusIcon READ plusIcon CONSTANT )
@@ -232,8 +229,6 @@ class MMStyle: public QObject
     Q_PROPERTY( QUrl positionTrackingStartImage READ positionTrackingStartImage CONSTANT )
     Q_PROPERTY( QUrl syncImage READ syncImage CONSTANT )
     Q_PROPERTY( QUrl externalGpsGreenImage READ externalGpsGreenImage CONSTANT )
-    Q_PROPERTY( QUrl externalBluetoothGreenImage READ externalBluetoothGreenImage CONSTANT )
-    Q_PROPERTY( QUrl externalNetworkGreenImage READ externalNetworkGreenImage CONSTANT )
     Q_PROPERTY( QUrl externalGpsRedImage READ externalGpsRedImage CONSTANT )
     Q_PROPERTY( QUrl negativeMMSymbolImage READ negativeMMSymbolImage CONSTANT )
     Q_PROPERTY( QUrl positiveMMSymbolImage READ positiveMMSymbolImage CONSTANT )
@@ -431,7 +426,6 @@ class MMStyle: public QObject
     QUrl arrowLinkRightIcon() const {return QUrl( "qrc:/ArrowLinkRight.svg" );}
     QUrl arrowUpIcon() const {return QUrl( "qrc:/ArrowUp.svg" );}
     QUrl backIcon() const {return QUrl( "qrc:/Back.svg" );}
-    QUrl bluetoothIcon() const {return QUrl( "qrc:/Bluetooth.svg" );}
     QUrl briefcaseIcon() const {return QUrl( "qrc:/Briefcase.svg" );}
     QUrl calendarIcon() const {return QUrl( "qrc:/Calendar.svg" );}
     QUrl checkmarkIcon() const {return QUrl( "qrc:/Checkmark.svg" );}
@@ -447,7 +441,6 @@ class MMStyle: public QObject
     QUrl environmentalIcon() const {return QUrl( "qrc:/Environmental.svg" );}
     QUrl facebookIcon() const {return QUrl( "qrc:/Facebook.svg" );}
     QUrl globeIcon() const {return QUrl( "qrc:/Globe.svg" );}
-    QUrl filterIcon() const {return QUrl( "qrc:/Filter.svg" );}
     QUrl globalIcon() const {return QUrl( "qrc:/Global.svg" );}
     QUrl gpsIcon() const {return QUrl( "qrc:/GPSIcon.svg" );}
     QUrl gpsAntennaHeightIcon() const {return QUrl( "qrc:/GPSAntennaHeight.svg" );}
@@ -466,7 +459,6 @@ class MMStyle: public QObject
     QUrl closeShapeIcon() const {return QUrl( "qrc:/CloseShape.svg" );}
     QUrl naturalResourcesIcon() const {return QUrl( "qrc:/NaturalResources.svg" );}
     QUrl nextIcon() const {return QUrl( "qrc:/Next.svg" );}
-    QUrl networkIcon() const {return QUrl( "qrc:/Network.svg" );}
     QUrl otherIcon() const {return QUrl( "qrc:/Other.svg" );}
     QUrl othersIcon() const {return QUrl( "qrc:/Others.svg" );}
     QUrl plusIcon() const {return QUrl( "qrc:/Plus.svg" );}
@@ -542,8 +534,6 @@ class MMStyle: public QObject
     QUrl positionTrackingStartImage() const {return QUrl( "qrc:/images/PositionTrackingStart.svg" );}
     QUrl syncImage() const {return QUrl( "qrc:/images/SyncImage.svg" );}
     QUrl externalGpsGreenImage() const {return QUrl( "qrc:/images/ExternalGpsGreen.svg" );}
-    QUrl externalBluetoothGreenImage() const {return QUrl( "qrc:/images/ExternalBluetoothProvider.svg" );}
-    QUrl externalNetworkGreenImage() const {return QUrl( "qrc:/images/ExternalNetworkProvider.svg" );}
     QUrl externalGpsRedImage() const {return QUrl( "qrc:/images/ExternalGpsRed.svg" );}
     QUrl negativeMMSymbolImage() const {return QUrl( "qrc:/images/NegativeMMSymbol.svg" );}
     QUrl positiveMMSymbolImage() const {return QUrl( "qrc:/images/PositiveMMSymbol.svg" );}

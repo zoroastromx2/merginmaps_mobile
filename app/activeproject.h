@@ -24,7 +24,6 @@
 #include "inputmapsettings.h"
 #include "merginprojectmetadata.h"
 #include "synchronizationoptions.h"
-#include "filter/filtercontroller.h"
 
 /**
  * \brief The ActiveProject class can load a QGIS project and holds its data.
@@ -35,7 +34,6 @@ class ActiveProject: public QObject
     Q_PROPERTY( LocalProject localProject READ localProject NOTIFY localProjectChanged ) // LocalProject instance of active project, changes when project is loaded
     Q_PROPERTY( QgsProject *qgsProject READ qgsProject NOTIFY qgsProjectChanged ) // QgsProject instance of active project, never changes
     Q_PROPERTY( AutosyncController *autosyncController READ autosyncController NOTIFY autosyncControllerChanged )
-    Q_PROPERTY( FilterController *filterController READ filterController NOTIFY filterControllerChanged )
     Q_PROPERTY( InputMapSettings *mapSettings READ mapSettings WRITE setMapSettings NOTIFY mapSettingsChanged )
     Q_PROPERTY( QString projectRole READ projectRole WRITE setProjectRole NOTIFY projectRoleChanged )
 
@@ -151,8 +149,6 @@ class ActiveProject: public QObject
      */
     bool photoSketchingEnabled() const;
 
-    FilterController *filterController() const;
-
   signals:
     void qgsProjectChanged();
     void localProjectChanged( LocalProject project );
@@ -187,8 +183,6 @@ class ActiveProject: public QObject
     void photoSketchingEnabledChanged();
 
     void appStateChanged( Qt::ApplicationState state );
-
-    void filterControllerChanged( FilterController *controller );
 
   public slots:
     // Reloads project if current project path matches given path (it's the same project)
@@ -231,7 +225,6 @@ class ActiveProject: public QObject
     LocalProjectsManager &mLocalProjectsManager;
     InputMapSettings *mMapSettings = nullptr;
     std::unique_ptr<AutosyncController> mAutosyncController;
-    std::unique_ptr<FilterController> mFilterController;
 
     QString mProjectLoadingLog;
     QString mProjectRole;
